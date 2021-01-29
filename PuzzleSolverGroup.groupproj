@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{B1759BDE-FF3F-4CF1-9C5F-BEAF555774CB}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="PuzzleSolver.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="PuzzleSolver">
+        <MSBuild Projects="PuzzleSolver.dproj"/>
+    </Target>
+    <Target Name="PuzzleSolver:Clean">
+        <MSBuild Projects="PuzzleSolver.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="PuzzleSolver:Make">
+        <MSBuild Projects="PuzzleSolver.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="PuzzleSolver"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="PuzzleSolver:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="PuzzleSolver:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
