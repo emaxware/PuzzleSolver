@@ -4,3 +4,8 @@
 *.exe
 *.rsm
 __history
+__recovery
+Win32
+Win64
+Android
+Android64
