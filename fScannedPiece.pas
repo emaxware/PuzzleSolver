@@ -35,8 +35,8 @@ type
     FScans:TScanCollection;
     FPiece:TScanPiece;
     FPieceIndex, FLastPointIndex:integer;
-    FAngleList:TList<Single>;
-    FRedStroke:TStrokeBrush;
+//    FAngleList:TList<Single>;
+//    FRedStroke:TStrokeBrush;
     FPieceOrig:TPoint;
   public
     { Public declarations }
@@ -58,8 +58,8 @@ procedure TfraScanPiece.Execute(AScanCollection: TScanCollection;
   APieceIndex: integer);
 begin
   FScans := AScanCollection;
-  FPiece := FScans.Pieces.ToArray[APieceIndex].Value;
-  FPieceOrig := FScans.Pieces.ToArray[APieceIndex].Key;
+  FPiece := FScans.Pieces[APieceIndex];
+  FPieceOrig := FScans.PieceOrigin[APieceIndex];
   FPieceIndex := APieceIndex;
 //  FPieceBitmap.Free;
   FPieceBitmap := FScans.GetPieceBitmap(FPieceIndex);
@@ -73,13 +73,13 @@ end;
 procedure TfraScanPiece.imgPieceDragDrop(Sender: TObject;
   const Data: TDragObject; const Point: TPointF);
 var
-  i:integer;
+//  i:integer;
   lst:TListBoxItem;
 begin
   with (Data.Source as TListBox).parent as TfrmMain do
   begin
     lst := lstPieces.Selected;
-    i := lst.Index;
+//    i := lst.Index;
     Execute(ScanCollection
       , Integer(Pointer(lstPieces.Selected.data)));
   end;
@@ -105,12 +105,12 @@ begin
 end;
 
 procedure TfraScanPiece.scrlbrPointsChange(Sender: TObject);
-var
-  ATempPos:TPointf;
+//var
+//  ATempPos:TPointf;
 begin
   if FLastPointIndex >= 0 then
   begin
-    FScans.Pieces.ToArray[FPieceIndex].Value.Points[FLastPointIndex].toPointF.DrawPoint(imgPiece.Bitmap.Canvas, 1);
+    FScans.Pieces[FPieceIndex].Points[FLastPointIndex].toPointF.DrawPoint(imgPiece.Bitmap.Canvas, 1);
 //    FPointList[FLastScrollPos].toPointF.DrawPoint(imgDetected.Bitmap.Canvas, 1);
 //    PointF(FLastScrollPos*2,imgProfile.Bitmap.Height * (1-(pi-FAngleList[FLastScrollPos])/pi)/4).DrawPoint(imgProfile.Bitmap.Canvas, 1);
 //    PointF(FLastScrollPos*2,imgProfile2.Bitmap.Height * (1-(FAngleList[FLastScrollPos]-FAngleList[FLastScrollPos-1])/pi)/2).DrawPoint(imgProfile2.Bitmap.Canvas, 1);

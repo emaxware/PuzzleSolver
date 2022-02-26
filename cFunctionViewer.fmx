@@ -1,0 +1,82 @@
+object fraFunctionViewer: TfraFunctionViewer
+  Size.Width = 662.000000000000000000
+  Size.Height = 635.000000000000000000
+  Size.PlatformDefault = False
+  inline fraBitmapViewerSlicer: TfraBitmapViewer
+    Align = Client
+    Size.Width = 380.000000000000000000
+    Size.Height = 635.000000000000000000
+    Size.PlatformDefault = False
+    inherited imgBitmap: TImageViewer
+      Size.Width = 380.000000000000000000
+      Size.Height = 604.000000000000000000
+      BitmapScale = 3.000000000000000000
+      Viewport.Width = 376.000000000000000000
+      Viewport.Height = 600.000000000000000000
+    end
+    inherited tlbFooter: TToolBar
+      Position.Y = 604.000000000000000000
+      Size.Width = 380.000000000000000000
+      inherited stat1: TStatusBar
+        Size.Width = 380.000000000000000000
+        inherited lblStatus: TLabel
+          Size.Width = 336.000000000000000000
+        end
+      end
+    end
+  end
+  object pnlSlicer: TPanel
+    Align = Left
+    Size.Width = 273.000000000000000000
+    Size.Height = 635.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object mmoProps: TMemo
+      Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+      DataDetectorTypes = []
+      Align = Client
+      Margins.Left = 5.000000000000000000
+      Margins.Bottom = 5.000000000000000000
+      Size.Width = 268.000000000000000000
+      Size.Height = 305.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Viewport.Width = 264.000000000000000000
+      Viewport.Height = 301.000000000000000000
+    end
+    object pnlLeft: TPanel
+      Align = Top
+      Size.Width = 273.000000000000000000
+      Size.Height = 317.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      object btnSlicer: TButton
+        Position.X = 8.000000000000000000
+        Position.Y = 16.000000000000000000
+        Size.Width = 97.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = 'btnScanPiece'
+      end
+    end
+    object spl1: TSplitter
+      Align = Top
+      Cursor = crVSplit
+      MinSize = 20.000000000000000000
+      Position.Y = 317.000000000000000000
+      Size.Width = 273.000000000000000000
+      Size.Height = 8.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+  object splSlicer: TSplitter
+    Align = Left
+    Cursor = crHSplit
+    MinSize = 20.000000000000000000
+    Position.X = 273.000000000000000000
+    Size.Width = 9.000000000000000000
+    Size.Height = 635.000000000000000000
+    Size.PlatformDefault = False
+  end
+end

@@ -1,47 +1,38 @@
 object fraScanPiece: TfraScanPiece
-  Size.Width = 359.000000000000000000
-  Size.Height = 415.000000000000000000
+  Size.Width = 358.000000000000000000
+  Size.Height = 414.000000000000000000
   Size.PlatformDefault = False
   object pnl2: TPanel
     Align = Client
-    Size.Width = 359.000000000000000000
-    Size.Height = 279.000000000000000000
+    Size.Width = 358.000000000000000000
+    Size.Height = 278.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 2
+    TabOrder = 1
     object imgPiece: TImageViewer
       Align = Client
       DragMode = dmAutomatic
       Margins.Left = 5.000000000000000000
       Margins.Top = 5.000000000000000000
       Margins.Bottom = 5.000000000000000000
-      Size.Width = 354.000000000000000000
-      Size.Height = 251.000000000000000000
+      Size.Width = 353.000000000000000000
+      Size.Height = 250.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
       OnDragEnter = imgPieceDragEnter
       OnDragOver = imgPieceDragOver
       OnDragDrop = imgPieceDragDrop
-      BackgroundFill.Kind = Gradient
-      BackgroundFill.Gradient.Points = <
-        item
-          Color = claBlack
-          Offset = 0.000000000000000000
-        end
-        item
-          Color = claWhite
-          Offset = 1.000000000000000000
-        end>
+      BackgroundFill.Kind = None
       ShowBackground = True
       ShowSizeGrip = True
-      Viewport.Width = 350.000000000000000000
-      Viewport.Height = 247.000000000000000000
+      Viewport.Width = 353.000000000000000000
+      Viewport.Height = 250.000000000000000000
     end
     object scrlbrPoints: TScrollBar
       Align = Bottom
       SmallChange = 0.000000000000000000
       Orientation = Horizontal
-      Position.Y = 261.000000000000000000
-      Size.Width = 359.000000000000000000
+      Position.Y = 260.000000000000000000
+      Size.Width = 358.000000000000000000
       Size.Height = 18.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
@@ -50,8 +41,8 @@ object fraScanPiece: TfraScanPiece
   end
   object pnlGraph: TPanel
     Align = Bottom
-    Position.Y = 288.000000000000000000
-    Size.Width = 359.000000000000000000
+    Position.Y = 287.000000000000000000
+    Size.Width = 358.000000000000000000
     Size.Height = 127.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
@@ -59,34 +50,25 @@ object fraScanPiece: TfraScanPiece
       Align = Client
       Padding.Left = 5.000000000000000000
       Padding.Right = 5.000000000000000000
-      Size.Width = 359.000000000000000000
+      Size.Width = 358.000000000000000000
       Size.Height = 127.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
       object imgProfile2: TImageViewer
         Align = Client
-        Size.Width = 243.000000000000000000
+        Size.Width = 242.000000000000000000
         Size.Height = 127.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
-        BackgroundFill.Kind = Gradient
-        BackgroundFill.Gradient.Points = <
-          item
-            Color = claBlack
-            Offset = 0.000000000000000000
-          end
-          item
-            Color = claWhite
-            Offset = 1.000000000000000000
-          end>
+        BackgroundFill.Color = claNull
         ShowBackground = True
-        Viewport.Width = 239.000000000000000000
-        Viewport.Height = 123.000000000000000000
+        Viewport.Width = 242.000000000000000000
+        Viewport.Height = 127.000000000000000000
       end
       object lblProfile2: TLabel
         Align = Right
         Margins.Left = 5.000000000000000000
-        Position.X = 253.000000000000000000
+        Position.X = 252.000000000000000000
         Size.Width = 101.000000000000000000
         Size.Height = 127.000000000000000000
         Size.PlatformDefault = False
@@ -99,8 +81,8 @@ object fraScanPiece: TfraScanPiece
     Align = Bottom
     Cursor = crVSplit
     MinSize = 20.000000000000000000
-    Position.Y = 279.000000000000000000
-    Size.Width = 359.000000000000000000
+    Position.Y = 278.000000000000000000
+    Size.Width = 358.000000000000000000
     Size.Height = 9.000000000000000000
     Size.PlatformDefault = False
   end

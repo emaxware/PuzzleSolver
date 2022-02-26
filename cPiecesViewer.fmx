@@ -1,0 +1,23 @@
+object fraPiecesViewer: TfraPiecesViewer
+  Size.Width = 679.000000000000000000
+  Size.Height = 513.000000000000000000
+  Size.PlatformDefault = False
+  OnEnter = FrameEnter
+  OnResized = FrameResized
+  object grdPieces: TGrid
+    Align = Client
+    CanFocus = True
+    ClipChildren = True
+    Size.Width = 679.000000000000000000
+    Size.Height = 513.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Options = [AlternatingRowBackground, AutoDisplacement]
+    OnDrawColumnCell = grdPiecesDrawColumnCell
+    OnCellDblClick = grdPiecesCellDblClick
+    Viewport.Width = 679.000000000000000000
+    Viewport.Height = 513.000000000000000000
+    object img1: TImageColumn
+    end
+  end
+end

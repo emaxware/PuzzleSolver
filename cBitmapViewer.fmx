@@ -1,0 +1,84 @@
+object fraBitmapViewer: TfraBitmapViewer
+  Size.Width = 542.000000000000000000
+  Size.Height = 380.000000000000000000
+  Size.PlatformDefault = False
+  object imgBitmap: TImageViewer
+    Align = Client
+    Size.Width = 542.000000000000000000
+    Size.Height = 349.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    OnResized = imgBitmapResized
+    OnMouseMove = imgBitmapMouseMove
+    Viewport.Width = 538.000000000000000000
+    Viewport.Height = 345.000000000000000000
+  end
+  object tlbFooter: TToolBar
+    Align = Bottom
+    Position.Y = 349.000000000000000000
+    Size.Width = 542.000000000000000000
+    Size.Height = 31.000000000000000000
+    Size.PlatformDefault = False
+    StyleLookup = 'bottomtoolbar'
+    TabOrder = 1
+    object stat1: TStatusBar
+      Align = Client
+      Padding.Left = 5.000000000000000000
+      Padding.Top = 5.000000000000000000
+      Padding.Right = 5.000000000000000000
+      Padding.Bottom = 5.000000000000000000
+      ShowSizeGrip = True
+      Size.Width = 542.000000000000000000
+      Size.Height = 31.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object lblStatus: TLabel
+        Align = Client
+        StyledSettings = [Size, Style, FontColor]
+        Margins.Left = 10.000000000000000000
+        Size.Width = 332.000000000000000000
+        Size.Height = 21.000000000000000000
+        Size.PlatformDefault = False
+        TextSettings.Font.Family = 'Lucida Console'
+        Text = 'lblStatus'
+        TabOrder = 0
+      end
+      object rectColor1: TRectangle
+        Align = Left
+        Position.X = 5.000000000000000000
+        Position.Y = 5.000000000000000000
+        Size.Width = 24.000000000000000000
+        Size.Height = 21.000000000000000000
+        Size.PlatformDefault = False
+      end
+      object tckZoom: TComboTrackBar
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        Align = Right
+        TabOrder = 1
+        Cursor = crIBeam
+        DecimalDigits = 2
+        Max = 10.000000000000000000
+        ValueType = Float
+        KeyboardType = NumbersAndPunctuation
+        Position.X = 437.000000000000000000
+        Position.Y = 5.000000000000000000
+        Size.Width = 100.000000000000000000
+        Size.Height = 21.000000000000000000
+        Size.PlatformDefault = False
+        OnChange = tckZoomChange
+      end
+      object lblZoom: TLabel
+        Align = Right
+        Margins.Right = 5.000000000000000000
+        Position.X = 371.000000000000000000
+        Position.Y = 5.000000000000000000
+        Size.Width = 61.000000000000000000
+        Size.Height = 21.000000000000000000
+        Size.PlatformDefault = False
+        TextSettings.HorzAlign = Trailing
+        Text = 'Scale'
+        TabOrder = 2
+      end
+    end
+  end
+end

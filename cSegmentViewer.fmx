@@ -1,0 +1,79 @@
+inherited fraSegmentViewer: TfraSegmentViewer
+  inherited fraBitmapViewerSlicer: TfraBitmapViewer
+    inherited imgBitmap: TImageViewer
+      Viewport.Width = 376.000000000000000000
+      Viewport.Height = 600.000000000000000000
+    end
+  end
+  inherited pnlSlicer: TPanel
+    inherited mmoProps: TMemo
+      Size.Height = 365.000000000000000000
+      TabOrder = 2
+      Viewport.Width = 268.000000000000000000
+      Viewport.Height = 365.000000000000000000
+    end
+    inherited pnlLeft: TPanel
+      Size.Height = 257.000000000000000000
+      TabOrder = 0
+    end
+    inherited spl1: TSplitter
+      Position.Y = 257.000000000000000000
+    end
+    object grpSegment: TGroupBox
+      Position.X = 8.000000000000000000
+      Position.Y = 65.000000000000000000
+      Size.Width = 257.000000000000000000
+      Size.Height = 85.000000000000000000
+      Size.PlatformDefault = False
+      Text = ' Segment Length'
+      TabOrder = 3
+      object edtSegmentLength: TNumberBox
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        TabOrder = 4
+        Cursor = crIBeam
+        Position.X = 10.000000000000000000
+        Position.Y = 26.000000000000000000
+      end
+      object sliSegmentLength: TTrackBar
+        CanParentFocus = True
+        Max = 1000.000000000000000000
+        Min = 10.000000000000000000
+        Orientation = Horizontal
+        Position.X = 10.000000000000000000
+        Position.Y = 56.000000000000000000
+        Size.Width = 233.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        Value = 30.000000000000000000
+      end
+    end
+    object grpSegmentOffset: TGroupBox
+      Position.X = 8.000000000000000000
+      Position.Y = 158.000000000000000000
+      Size.Width = 257.000000000000000000
+      Size.Height = 85.000000000000000000
+      Size.PlatformDefault = False
+      Text = ' Segment Offset '
+      TabOrder = 1
+      object edtSegmentOffset: TNumberBox
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        TabOrder = 4
+        Cursor = crIBeam
+        Position.X = 10.000000000000000000
+        Position.Y = 26.000000000000000000
+      end
+      object sliSegmentOffset: TTrackBar
+        CanParentFocus = True
+        Max = 1000.000000000000000000
+        Orientation = Horizontal
+        Position.X = 10.000000000000000000
+        Position.Y = 56.000000000000000000
+        Size.Width = 233.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+      end
+    end
+  end
+end

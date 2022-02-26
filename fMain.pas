@@ -12,40 +12,24 @@ uses
   Data.Bind.GenData, Data.Bind.EngExt, Fmx.Bind.DBEngExt, System.Rtti,
   System.Bindings.Outputs, Fmx.Bind.Editors, FMX.ListBox, Data.Bind.DBScope,
   System.Actions, FMX.ActnList, FMX.Menus, FMX.TreeView
-  , uScanPiece, FMX.ScrollBox, FMX.Memo, fScannedPiece
+  , uScanPiece, FMX.ScrollBox, FMX.Memo, fScannedPiece, FMX.Memo.Types,
+  cBitmapViewer
+  , m3.DebugForm.fmx, FMX.Edit, FMX.EditBox, FMX.NumberBox
+  , cFunctionViewer
+  , cSlicerViewer
+  , cSegmentViewer
+  , cPiecesViewer
   ;
 
 type
   TfrmMain = class(TForm)
-    Header: TToolBar;
-    Footer: TToolBar;
-    HeaderLabel: TLabel;
-    ilPieces: TImageList;
-    proMain: TPrototypeBindSource;
-    BindSourceDB1: TBindSourceDB;
-    bndngslst1: TBindingsList;
-    lnkflcntrltfld1: TLinkFillControlToField;
     sbMain: TStyleBook;
-    pmMain: TPopupMenu;
-    MenuItem1: TMenuItem;
-    MenuItem2: TMenuItem;
-    MenuItem3: TMenuItem;
     actlstMain: TActionList;
-    actImport: TAction;
+    actScan: TAction;
     actPreview: TAction;
     actAssemble: TAction;
-    actToImport: TChangeTabAction;
     tbcMain: TTabControl;
-    tiImport: TTabItem;
-    imgOrig: TImageViewer;
-    tiPreview: TTabItem;
-    tiAssemble: TTabItem;
-    actToPreview: TChangeTabAction;
-    actToAssemble: TChangeTabAction;
-    stat1: TStatusBar;
-    statPos: TLabel;
-    tiLog: TTabItem;
-    mmoLog: TMemo;
+    tabImport: TTabItem;
     tlbImport: TToolBar;
     btnClear: TButton;
     btnSave: TSpeedButton;
@@ -56,31 +40,46 @@ type
     lstPieces: TListBox;
     lst1: TListBoxItem;
     lst2: TListBoxItem;
-    fraScanPiece1: TfraScanPiece;
-    fraScanPiece2: TfraScanPiece;
-    spl3: TSplitter;
+    btnScan: TSpeedButton;
+    fraBitmapViewerImport: TfraBitmapViewer;
+    actChangeTab: TChangeTabAction;
+    actNext: TNextTabAction;
+    actPrev: TPreviousTabAction;
     procedure FormShow(Sender: TObject);
-    procedure imgOrigMouseUp(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Single);
     procedure actRestoreExecute(Sender: TObject);
     procedure actClearExecute(Sender: TObject);
     procedure actSaveExecute(Sender: TObject);
+    procedure imgOrigPaint(Sender: TObject; Canvas: TCanvas;
+      const ARect: TRectF);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure actScanExecute(Sender: TObject);
+    procedure lstPiecesDblClick(Sender: TObject);
+    procedure sliSegmentLengthChange(Sender: TObject);
   private
     { Private declarations }
-    fRedBrush:TStrokeBrush;
+    fPieceFillBrush, fPieceDrawBrush, fOriginBrush, fNullBrush:TStrokeBrush;
+//    fLastPt:TPoint;
+    procedure UpdatePieceOverlay;
+//    function toBitmapPoint(APoint: TPointF): TPointF;
+//    function toControlPoint(APoint, AOrig: TPointF): TPointF; overload;
+//    function toControlPoint(APoint: TPointF): TPointF; overload;
+//    procedure UpdateStatus;
   protected
-    fScanCollection:TScanCollection;
+    fScan:TScanCollection;
     fSelecting:boolean;
     fSelectStart:TPointF;
     fSelectEnd:TPointF;
-//    fSelectRect:TRectangle;
+    fPieceOverlay:TBitmap;
+    fSlicerTab:TTabItem;
+    fSlicerFrame:TfraSlicerViewer;
+    fSegmentTab:TTabItem;
+    fSegmentFrame:TfraSegmentViewer;
+    fPiecesTab:TTabItem;
+    fPiecesFrame:TfraPiecesViewer;
     procedure AddPiece(APieceIndex:Integer);
   public
     { Public declarations }
-    procedure log(const AMsg:string); overload;
-    procedure log(const AFmtMsg:string; Args:array of const); overload;
-
-    property ScanCollection:TScanCollection read fScanCollection;
+    property ScanCollection:TScanCollection read fScan;
   end;
 
 var
@@ -96,137 +95,239 @@ uses
   , System.IOUtils
   , System.JSON
   , System.Generics.Collections
+  , System.Math.Vectors
+  , System.Math
+  , System.SyncObjs
   , uLib
+  , m3.consolelog
+  , system.UIConsts
+  , fmx.InertialMovement
+  , m3.imageviewerhelper
+  , m3.framehelper.fmx
+  , m3.bitmaphelper.fmx
+  , m3.pointhelper
+//  , fDebug
+//  , fmx.Dialogs
+//  , m3.log
   ;
 
 const
-  PieceCollectionFilename = 'PieceCollection.json';
+  PieceCollectionFilename = '..\..\Data\PieceCollection.json';
 
 var
   bFirstShow:boolean = true;
 
+{$REGION 'Form Handler'}
+procedure TfrmMain.FormClose(Sender: TObject; var Action: TCloseAction);
+begin
+  fScan.Free;
+  fNullBrush.free;
+  fPieceFillBrush.free
+end;
+
+procedure TfrmMain.FormShow(Sender: TObject);
+begin
+  if bFirstShow then
+  begin
+    TfrmDebug.Log('Showing..');
+    bFirstShow := false;
+    tabImport.MakeActive;
+    fPieceFillBrush := TStrokeBrush.Create(TBrushKind.Solid, TAlphaColorRec.Aqua);
+    fPieceDrawBrush := TStrokeBrush.Create(TBrushKind.Solid, TAlphaColorRec.Blue);
+    fOriginBrush := TStrokeBrush.Create(TBrushKind.Solid, TAlphaColorRec.Yellow);
+    fNullBrush := TStrokeBrush.Create(TBrushKind.Solid, TAlphaColorRec.Null);
+
+    fSlicerFrame := tbcMain.AddFrame<TfraSlicerViewer>('Slicer', fSlicerTab);
+    fSlicerFrame.Start(
+      procedure(AViewer:TfraFunctionViewer)
+      begin
+        fSlicerTab.MakeActive;
+        AViewer.Start(fScan, lstPieces.ItemIndex)
+      end);
+
+    fSegmentFrame := tbcMain.AddFrame<TfraSegmentViewer>('Segment', fSegmentTab);
+    fSegmentFrame.Start(
+      procedure(AViewer:TfraFunctionViewer)
+      begin
+        fSegmentTab.MakeActive;
+        AViewer.Start(fScan, lstPieces.ItemIndex)
+      end);
+
+    fPiecesFrame := tbcMain.AddFrame<TfraPiecesViewer>('Pieces', fPiecesTab);
+    fPiecesFrame.Start(
+      procedure(AViewer:TfraPiecesViewer)
+      begin
+        tbcMain.SetActiveTabWithTransitionAsync(
+          fPiecesTab
+          , TTabTransition.Slide
+          , TTabTransitionDirection.Normal
+          , procedure
+          begin
+          end
+          );
+        AViewer.Start(fScan)
+      end,
+      procedure(AIndex:integer; APiece: TScanPiece)
+      begin
+        tbcMain.SetActiveTabWithTransitionAsync(
+          fSlicerTab
+          , TTabTransition.Slide
+          , TTabTransitionDirection.Normal
+          , procedure
+          begin
+          end
+          );
+        fSlicerFrame.Start(fScan, AIndex);
+        fSlicerFrame.UpdateOverlay
+      end
+      );
+
+    actRestore.Execute;
+    actScan.Execute
+  end;
+end;
+{$ENDREGION}
+
+{$REGION 'Action Handlers'}
 procedure TfrmMain.actClearExecute(Sender: TObject);
 begin
   lstPieces.Clear;
-  fScanCollection.Clear;
+  if fScan <> nil then
+    fScan.Clear;
+{$IF DEFINED(ANDROID) OR DEFINED(IOS)}
+
+{$ELSE}
+
+{$ENDIF}
 end;
 
 procedure TfrmMain.actRestoreExecute(Sender: TObject);
-var
-  APiece:TPair<TPoint,TScanPiece>;
-  i:integer;
 begin
   actClear.Execute;
   if TFile.Exists(PieceCollectionFilename) then
   begin
-    fScanCollection.asJSON := TJSONObject.ParseJSONValue(
-      TFile.ReadAllText(PieceCollectionFilename)) as TJSONObject;
-    i := 0;
-    for APiece in fScanCollection.Pieces.ToArray do
-    begin
+    if fScan = nil then
+      fScan := TScanCollection.create;
+    fScan.LoadFrom(PieceCollectionFilename);
+    fraBitmapViewerImport.imgBitmap.Bitmap.Assign(fScan.Bitmap);
+    for var i := 0 to fScan.Count-1 do
       AddPiece(i);
-      Inc(i);
-    end;
-    fraScanPiece1.Execute(fScanCollection, 0);
-    fraScanPiece2.Execute(fScanCollection, 1);
+    fraBitmapViewerImport.imgBitmap.BitmapScale := 1.22;
+    fraBitmapViewerImport.imgBitmap.AniCalculations.ViewportPosition := TPointD.create(0, 0);
+//    fraScanPiece1.Execute(fScan, 0);
+//    fraScanPiece2.Execute(fScan, 1);
   end;
 end;
 
 procedure TfrmMain.actSaveExecute(Sender: TObject);
 begin
-  TFile.WriteAllText(PieceCollectionFilename, fScanCollection.asJSON.ToString)
+  fScan.SaveTo(PieceCollectionFilename)
 end;
 
-//procedure TfrmMain.AddPiece(AScanPiece: TScanPiece; AScanOrigin:TPoint; ABitmapScale:single);
+procedure TfrmMain.actScanExecute(Sender: TObject);
+begin
+  var ABitmapResult:TBitmap;
+  if fScan.DetectPieces(ABitmapResult) then
+  try
+//    fraBitmapViewer.imgBitmap.Bitmap.Clear(TAlphaColorRec.Red);
+    fraBitmapViewerImport.imgBitmap.Bitmap := ABitmapResult;
+    fraBitmapViewerImport.imgBitmap.Repaint;
+
+    lstPieces.Clear;
+    for var i := 0 to fScan.Count-1 do
+    begin
+      AddPiece(i);
+//      break
+    end;
+  finally
+    ABitmapResult.free
+  end;
+
+  fPiecesFrame.Start
+end;
+{$ENDREGION}
+
+{$REGION 'Form methods'}
 procedure TfrmMain.AddPiece(APieceIndex:Integer);// ABitmapScale:single);
 var
-//  bitmapScaledWidth
-//    :Single;
-  imgPt, ADrawPoint:TPoint;
-//  imgSurface:TBitmapSurface;
+//  imgPt, ADrawPoint:TPoint;
   ATmpBitmap, AScanBitmap:TBitmap;
   AListItem:TListBoxItem;
-  AScanPiece: TScanPiece; AScanOrigin:TPoint;
+//  AScanPiece: TScanPiece;
+//  AScanOrigin:TPoint;
 begin
-  with imgOrig do
   try
-//    ATmpBitmap := TBitmap.Create(AScanPiece.Width, AScanPiece.Height);
-//    ATmpBitmap.CopyFromBitmap(Bitmap, Rect(AScanOrigin.X, AScanOrigin.Y, AScanOrigin.X + AScanPiece.Width - 1, AScanOrigin.Y + AScanPiece.Height - 1), 0, 0);
-//    if Bitmap.Canvas.BeginScene then
-//    try
-//      for imgPt in AScanPiece.Points do
-//      begin
-//        ADrawPoint := imgPt + AScanOrigin;
-//        ADrawPoint.toPointF.DrawPoint(Bitmap.Canvas, 1, fRedBrush, 5);
-//      end;
-//    finally
-//      Bitmap.Canvas.EndScene
-//    end;
-    ATmpBitmap := fScanCollection.GetPieceBitmap(APieceIndex);
+    ATmpBitmap := fScan.GetPieceBitmap(APieceIndex);
     AScanBitmap := ATmpBitmap.CreateThumbnail(
-//      Round(AScanPiece.Width * Bitmap.BitmapScale), Round(AScanPiece.Height * Bitmap.BitmapScale)
       80, 80
       );
+//    TfrmDebug.Instance.AddBitmap(AScanBitmap);
     AListItem := TListBoxItem.Create(lstPieces);
     AListItem.ItemData.Bitmap := AScanBitmap;
-    AListItem.Data := Pointer(APieceIndex);// TOPair<TPoint,TScanPiece>.Create(fScanCollection.Pieces.ToArray[APieceIndex]);
+    AListItem.Data := Pointer(APieceIndex);// TOPair<TPoint,TScanPiece>.Create(fScan.Pieces.ToArray[APieceIndex]);
     lstPieces.InsertObject(0, AListItem);
-    AListItem.ItemData.Text := 'Scanned';
+//    AListItem.ItemData.Text := 'Scanned';
+    AListItem.ItemData.Detail := 'Detail';
     AListItem.DragMode := TDragMode.dmAutomatic;
-    AListItem.OnDragDrop := self.lst1DragDrop;
-    AListItem.OnDragEnd := self.lst1DragEnd;
-//    actSave.Execute
   finally
-    ATmpBitmap.free
+//    ATmpBitmap.free
   end;
 end;
 
-procedure TfrmMain.FormShow(Sender: TObject);
-var
-  APiece:TPair<TPoint,TScanPiece>;
+procedure TfrmMain.UpdatePieceOverlay;
 begin
-  if bFirstShow then
+end;
+{$ENDREGION}
+
+procedure TfrmMain.imgOrigPaint(Sender: TObject; Canvas: TCanvas;
+  const ARect: TRectF);
+begin
+  if fPieceFillBrush = nil then
+    exit;
+  if Canvas.BeginScene then
+  try
+    var saveFill := Canvas.Fill;
+    var save := Canvas.SaveState;
+    try
+      Canvas.Fill := fPieceFillBrush;
+      Canvas.Stroke.Assign(fPieceDrawBrush);
+      Canvas.Stroke.Thickness := fraBitmapViewerImport.imgBitmap.BitmapScale;
+//      Canvas.Stroke.Dash := TStrokeDash.Dot;
+//      var pcs := fScan.Pieces.Values.toarray;
+//      var origs := fScan.Pieces.Keys.ToArray;
+      for var i := 0 to fScan.Count-1 do
+      begin
+        var poly := fScan.Pieces[i].Points.asPolygon;
+        var orig:TPointF := fScan.PieceOrigin[i];
+        for var j := Low(poly) to High(poly) do
+          poly[j] := fraBitmapViewerImport.imgBitmap.toControlPoint(poly[j], orig);
+        Canvas.fill := fOriginBrush;
+        var origRect := TRectF.create(fraBitmapViewerImport.imgBitmap.toControlPoint(Orig.toOffset(-5, -5)), fraBitmapViewerImport.imgBitmap.toControlPoint(Orig.toOffset(5, 5)));
+        Canvas.FillRect(origRect, 1);
+        Canvas.Fill := fPieceFillBrush;
+      end;
+    finally
+      Canvas.RestoreState(save);
+      Canvas.fill := saveFill
+    end
+  finally
+    Canvas.EndScene
+  end
+end;
+
+procedure TfrmMain.lstPiecesDblClick(Sender: TObject);
+begin
+  if lstPieces.ItemIndex >= 0 then
   begin
-    bFirstShow := false;
-    lstPieces.Clear;
-    fScanCollection := TScanCollection.create(imgOrig.Bitmap);
-    fRedBrush := TStrokeBrush.Create(TBrushKind.Solid, TAlphaColorRec.Red);
-    actRestore.Execute
+//    fSlicerTab.MakeActive;
+    fSlicerFrame.Start
+//    UpdatePieceOverlay;
   end;
 end;
 
-procedure TfrmMain.imgOrigMouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Single);
-var
-  imgPt:TPointF;
-  bitmapScaledSize:TSizeF;
-  AScanPiece:TScanPiece;
-  AScanOrigin, ADrawPoint:TPoint;
+procedure TfrmMain.sliSegmentLengthChange(Sender: TObject);
 begin
-  fSelecting := false;
-  imgPt := PointF(x, y);
-  log('imgPt.x=%.2f,imgPt.y=%.2f',[imgPt.x,imgPt.y]);
-  bitmapScaledSize := TSizeF.Create(imgOrig.Bitmap.Width*imgOrig.BitmapScale,imgOrig.Bitmap.Height*imgOrig.BitmapScale);
-  log('bitmapScaledSize.cx=%.2f,bitmapScaledSize.cy=%.2f',[bitmapScaledSize.cx,bitmapScaledSize.cy]);
-  imgPt.Offset(imgOrig.ViewportPosition.x, imgOrig.ViewportPosition.y);
-  log('imgPt.x=%.2f,imgPt.y=%.2f',[imgPt.x,imgPt.y]);
-//  imgOrig.Scene.
-  imgPt.Offset((bitmapScaledSize.Width - imgOrig.ContentBounds.Width),(bitmapScaledSize.Height - imgOrig.ContentBounds.Height)/2);
-  log('imgPt.x=%.2f,imgPt.y=%.2f',[imgPt.x,imgPt.y]);
-  imgPt := imgPt / imgOrig.BitmapScale;
-  log('imgPt.x=%.2f,imgPt.y=%.2f',[imgPt.x,imgPt.y]);
-  if fScanCollection.DetectPiece(imgPt.toPoint, 5, AScanPiece, AScanOrigin) then
-    AddPiece(fScanCollection.Pieces.Count-1);
-end;
-
-procedure TfrmMain.log(const AFmtMsg: string; Args: array of const);
-begin
-  log(Format(AFmtMsg,Args))
-end;
-
-procedure TfrmMain.log(const AMsg: string);
-begin
-  mmoLog.Lines.Insert(0, Format('%s - %s',[DateTimeToStr(now), AMsg]));
+  UpdatePieceOverlay
 end;
 
 end.
