@@ -25,11 +25,14 @@ type
   private
     { Private declarations }
     fLastPt:TPoint;
+    fAutoZoom: boolean;
   protected
     procedure Loaded; override;
   public
     { Public declarations }
-    procedure UpdateStatus;
+    procedure UpdateStatus; virtual;
+
+    property AutoZoom:boolean read fAutoZoom;// write fAutoZoom;
   end;
 
 implementation
@@ -44,9 +47,12 @@ uses
 procedure TfraBitmapViewer.imgBitmapMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Single);
 begin
-  fLastPt := imgBitmap.toBitmapPoint(PointF(x, y)).toPoint;
+  if fAutoZoom then
+    fLastPt := imgBitmap.toBitmapPoint(PointF(x, y)).toPoint
+  else
+    fLastPt := Pointf(x, y).toPoint;
   var data:TBitmapData;
-  if Rect(0, 0, imgBitmap.Bitmap.Width-1, imgBitmap.Bitmap.Height-1). Contains(fLastPt)
+  if Rect(0, 0, imgBitmap.Bitmap.Width-1, imgBitmap.Bitmap.Height-1).Contains(fLastPt)
   then
   begin
     if imgBitmap.Bitmap.Map(TMapAccess.Read, data) then
@@ -70,11 +76,13 @@ end;
 procedure TfraBitmapViewer.Loaded;
 begin
   inherited;
-//  tckZoom.va
+  fAutoZoom := true
 end;
 
 procedure TfraBitmapViewer.tckZoomChange(Sender: TObject);
 begin
+  if not fAutoZoom then
+    exit;
   imgBitmap.BeginUpdate;
   imgBitmap.BitmapScale := tckZoom.Value;
   imgBitmap.EndUpdate
@@ -87,6 +95,8 @@ begin
     , fLastPt.X
     , fLastPt.Y
     ]);
+  if not fAutoZoom then
+    exit;
   tckZoom.BeginUpdate;
   tckZoom.Value := imgBitmap.Bitmapscale;
   tckZoom.EndUpdate

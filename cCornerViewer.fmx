@@ -1,0 +1,252 @@
+inherited fraCornerViewer: TfraCornerViewer
+  OnResized = FrameResized
+  inherited fraBitmapViewer: TfraBitmapViewer
+    inherited imgBitmap: TImageViewer
+      OnPaint = fraBitmapViewerSlicerimgBitmapPaint
+      OnHScrollChange = fraBitmapViewertckZoomChange
+      OnVScrollChange = fraBitmapViewertckZoomChange
+      Viewport.Width = 376.000000000000000000
+      Viewport.Height = 600.000000000000000000
+      object lblPieceIndex: TLabel
+        Align = Top
+        StyledSettings = [Family, Style, FontColor]
+        Margins.Top = 5.000000000000000000
+        Position.Y = 5.000000000000000000
+        Size.Width = 376.000000000000000000
+        Size.Height = 61.000000000000000000
+        Size.PlatformDefault = False
+        TextSettings.Font.Size = 20.000000000000000000
+        TextSettings.HorzAlign = Center
+        TextSettings.VertAlign = Leading
+        Text = 'test'
+        TabOrder = 2
+      end
+    end
+    inherited tlbFooter: TToolBar
+      inherited stat1: TStatusBar
+        inherited lblStatus: TLabel
+          Size.Width = 241.000000000000000000
+        end
+        inherited tckZoom: TComboTrackBar
+          Position.X = 320.000000000000000000
+          Size.Width = 55.000000000000000000
+          OnChange = fraBitmapViewertckZoomChange
+        end
+        inherited lblZoom: TLabel
+          Position.X = 280.000000000000000000
+          Size.Width = 35.000000000000000000
+        end
+      end
+    end
+  end
+  inherited pnlSlicer: TPanel
+    inherited mmoProps: TMemo
+      Margins.Right = 5.000000000000000000
+      Size.Width = 263.000000000000000000
+      Size.Height = 221.000000000000000000
+      TabOrder = 1
+      Viewport.Width = 263.000000000000000000
+      Viewport.Height = 221.000000000000000000
+    end
+    inherited pnlLeft: TPanel
+      Size.Height = 401.000000000000000000
+      TabOrder = 0
+      inherited btnSlicer: TButton
+        Size.Width = 89.000000000000000000
+        TabOrder = 3
+        Text = 'Update'
+        OnClick = btnSlicerClick
+      end
+      object grpHeadSize: TGroupBox
+        Padding.Left = 10.000000000000000000
+        Padding.Top = 20.000000000000000000
+        Padding.Right = 10.000000000000000000
+        Padding.Bottom = 10.000000000000000000
+        Position.X = 8.000000000000000000
+        Position.Y = 76.000000000000000000
+        Size.Width = 257.000000000000000000
+        Size.Height = 56.000000000000000000
+        Size.PlatformDefault = False
+        Text = ' Head length '
+        TabOrder = 7
+        object sliHeadLength: TComboTrackBar
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          Align = Client
+          TabOrder = 35
+          Cursor = crIBeam
+          Value = 20.000000000000000000
+          KeyboardType = NumberPad
+          Frequency = 0.000000000000000000
+          Size.Width = 237.000000000000000000
+          Size.Height = 26.000000000000000000
+          Size.PlatformDefault = False
+          OnChange = btnSlicerClick
+        end
+      end
+      object grpCornerRatio: TGroupBox
+        Padding.Left = 10.000000000000000000
+        Padding.Top = 20.000000000000000000
+        Padding.Right = 10.000000000000000000
+        Padding.Bottom = 10.000000000000000000
+        Position.X = 8.000000000000000000
+        Position.Y = 130.000000000000000000
+        Size.Width = 257.000000000000000000
+        Size.Height = 59.000000000000000000
+        Size.PlatformDefault = False
+        Text = ' Segment Ratio '
+        TabOrder = 6
+        object sliAngleRatio: TComboTrackBar
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          Align = Client
+          TabOrder = 35
+          Cursor = crIBeam
+          Min = 0.900000000000000000
+          Max = 1.000000000000000000
+          Value = 0.950000045122578700
+          ValueType = Float
+          KeyboardType = NumbersAndPunctuation
+          Frequency = 0.001000000047497451
+          Size.Width = 237.000000000000000000
+          Size.Height = 29.000000000000000000
+          Size.PlatformDefault = False
+          OnChange = btnSlicerClick
+        end
+      end
+      object btnNext: TButton
+        Position.X = 168.000000000000000000
+        Position.Y = 16.000000000000000000
+        Size.Width = 40.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Text = 'Next'
+        OnClick = btnNextClick
+      end
+      object btnPrev: TButton
+        Position.X = 120.000000000000000000
+        Position.Y = 16.000000000000000000
+        Size.Width = 40.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = 'Prev'
+        OnClick = btnNextClick
+      end
+      object chkReverse: TCheckBox
+        Position.X = 8.000000000000000000
+        Position.Y = 49.000000000000000000
+        TabOrder = 8
+        Text = 'Reverse'
+        OnChange = btnSlicerClick
+      end
+      object grpMaxAngle: TGroupBox
+        Padding.Left = 10.000000000000000000
+        Padding.Top = 20.000000000000000000
+        Padding.Right = 10.000000000000000000
+        Padding.Bottom = 10.000000000000000000
+        Position.X = 8.000000000000000000
+        Position.Y = 187.000000000000000000
+        Size.Width = 257.000000000000000000
+        Size.Height = 59.000000000000000000
+        Size.PlatformDefault = False
+        Text = ' Max Angle '
+        TabOrder = 4
+        object sliMaxAngle: TComboTrackBar
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          Align = Client
+          TabOrder = 35
+          Cursor = crIBeam
+          Max = 90.000000000000000000
+          Value = 20.000000298023220000
+          ValueType = Float
+          KeyboardType = NumbersAndPunctuation
+          Frequency = 0.100000001490116100
+          Size.Width = 237.000000000000000000
+          Size.Height = 29.000000000000000000
+          Size.PlatformDefault = False
+          OnChange = btnSlicerClick
+        end
+      end
+      object sliManual: TTrackBar
+        Align = Bottom
+        CanParentFocus = True
+        Orientation = Horizontal
+        Margins.Top = 5.000000000000000000
+        Margins.Bottom = 5.000000000000000000
+        Position.Y = 377.000000000000000000
+        Size.Width = 273.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 5
+        OnChange = sliManualChange
+      end
+      object btnAll: TButton
+        Position.X = 216.000000000000000000
+        Position.Y = 16.000000000000000000
+        Size.Width = 40.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = 'All'
+        OnClick = btnAllClick
+      end
+    end
+    inherited spl1: TSplitter
+      Position.Y = 401.000000000000000000
+    end
+    object grpTrace: TGroupBox
+      Position.X = 1.000000000000000000
+      Position.Y = 244.000000000000000000
+      Size.Width = 273.000000000000000000
+      Size.Height = 133.000000000000000000
+      Size.PlatformDefault = False
+      Text = ' Trace '
+      TabOrder = 3
+      object rbNone: TRadioButton
+        GroupName = 'Trace'
+        IsChecked = True
+        Position.X = 8.000000000000000000
+        Position.Y = 41.000000000000000000
+        TabOrder = 28
+        Text = 'None'
+      end
+      object btnStep: TButton
+        Position.X = 160.000000000000000000
+        Position.Y = 14.000000000000000000
+        Size.Width = 89.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = 'Next'
+        OnClick = btnStepClick
+      end
+      object rbByPoint: TRadioButton
+        GroupName = 'Trace'
+        Position.X = 8.000000000000000000
+        Position.Y = 63.000000000000000000
+        TabOrder = 35
+        Text = 'By Point'
+      end
+      object rbBySegment: TRadioButton
+        GroupName = 'Trace'
+        Position.X = 8.000000000000000000
+        Position.Y = 84.000000000000000000
+        TabOrder = 33
+        Text = 'By Segment'
+      end
+      object rbShowErrors: TCheckBox
+        Position.X = 8.000000000000000000
+        Position.Y = 106.000000000000000000
+        TabOrder = 37
+        Text = 'Show Errors'
+      end
+      object rbManual: TRadioButton
+        GroupName = 'Trace'
+        Position.X = 8.000000000000000000
+        Position.Y = 14.000000000000000000
+        TabOrder = 34
+        Text = 'Manual'
+      end
+    end
+  end
+end

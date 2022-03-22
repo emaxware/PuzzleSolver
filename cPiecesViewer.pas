@@ -94,7 +94,8 @@ begin
     end;
     bnd.Inflate(-5, -5);
     var bitmap := fScan.GetPieceBitmap(pieceIndex);
-    canvas.DrawBitmap(bitmap, bitmap.BoundsF, bnd, 1)
+    canvas.DrawBitmap(bitmap, bitmap.BoundsF, bnd, 1);
+    Canvas.FillText(bnd, pieceIndex.ToString, false, 1, [], TTextAlign.Center, TTextAlign.Center)
   finally
     Canvas.RestoreState(save);
     Canvas.EndScene

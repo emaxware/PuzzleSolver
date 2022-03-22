@@ -13,7 +13,7 @@ uses
 
 type
   TfraFunctionViewer = class(TFrame)
-    fraBitmapViewerSlicer: TfraBitmapViewer;
+    fraBitmapViewer: TfraBitmapViewer;
     pnlSlicer: TPanel;
     btnSlicer: TButton;
     mmoProps: TMemo;
@@ -28,12 +28,14 @@ type
     fPiece:TScanPiece;
     fScan:TScanCollection;
     fStarter:TProc<TfraFunctionViewer>;
+    fNext:TProc;
   public
     { Public declarations }
     procedure UpdateOverlay; virtual; abstract;
 
     procedure Start; overload; virtual;
-    procedure Start(AStarter:TProc<TfraFunctionViewer>); overload; virtual;
+    procedure Next; overload; virtual;
+    procedure Start(AStarter:TProc<TfraFunctionViewer>; ANext:TProc); overload; virtual;
     procedure Start(AScan:TScanCollection); overload; virtual;
     procedure Start(AScan:TScanCollection; APieceIndex:integer); overload; virtual;
   end;
@@ -48,7 +50,11 @@ uses
 
 { TfraFunctionViewer }
 
-{ TfraFunctionViewer }
+procedure TfraFunctionViewer.Next;
+begin
+  if assigned(fNext) then
+    fNext
+end;
 
 procedure TfraFunctionViewer.Start(AScan: TScanCollection;
   APieceIndex: integer);
@@ -69,9 +75,10 @@ begin
   fOverlay := fBitmap.Clone
 end;
 
-procedure TfraFunctionViewer.Start(AStarter: TProc<TfraFunctionViewer>);
+procedure TfraFunctionViewer.Start(AStarter: TProc<TfraFunctionViewer>; ANext:TProc);
 begin
-  fStarter := aStarter
+  fStarter := aStarter;
+  fNext := ANext
 end;
 
 procedure TfraFunctionViewer.Start;

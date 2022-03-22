@@ -1,0 +1,218 @@
+inherited fraArrangeViewer: TfraArrangeViewer
+  Size.Width = 1240.000000000000000000
+  Size.Height = 680.000000000000000000
+  inherited fraBitmapViewer: TfraBitmapViewer
+    Size.Width = 925.000000000000000000
+    Size.Height = 680.000000000000000000
+    inherited imgBitmap: TImageViewer
+      Size.Width = 925.000000000000000000
+      Size.Height = 649.000000000000000000
+      OnPaint = fraBitmapViewerimgBitmapPaint
+      BitmapScale = 2.840000152587891000
+      Viewport.Width = 921.000000000000000000
+      Viewport.Height = 645.000000000000000000
+    end
+    inherited tlbFooter: TToolBar
+      Position.Y = 649.000000000000000000
+      Size.Width = 925.000000000000000000
+      inherited stat1: TStatusBar
+        Size.Width = 925.000000000000000000
+        inherited lblStatus: TLabel
+          Size.Width = 715.000000000000000000
+        end
+        inherited tckZoom: TComboTrackBar
+          Min = 0.100000000000000000
+          Value = 0.500000007450580600
+          Frequency = 0.100000001490116100
+          Position.X = 820.000000000000000000
+          OnChange = fraBitmapViewertckZoomChange
+        end
+        inherited lblZoom: TLabel
+          Position.X = 754.000000000000000000
+        end
+      end
+    end
+  end
+  inherited pnlSlicer: TPanel
+    Size.Width = 297.000000000000000000
+    Size.Height = 680.000000000000000000
+    inherited mmoProps: TMemo
+      Align = Bottom
+      Position.Y = 641.000000000000000000
+      Size.Width = 292.000000000000000000
+      Size.Height = 34.000000000000000000
+      Viewport.Width = 292.000000000000000000
+      Viewport.Height = 34.000000000000000000
+    end
+    inherited pnlLeft: TPanel
+      Align = Client
+      Padding.Left = 5.000000000000000000
+      Padding.Top = 5.000000000000000000
+      Padding.Right = 5.000000000000000000
+      Padding.Bottom = 5.000000000000000000
+      Size.Width = 297.000000000000000000
+      Size.Height = 633.000000000000000000
+      inherited btnSlicer: TButton
+        Position.X = 208.000000000000000000
+        Position.Y = 9.000000000000000000
+        Size.Width = 80.000000000000000000
+        Size.Height = 40.000000000000000000
+        OnClick = btnSlicerClick
+      end
+      object spl2: TSplitter
+        Align = Bottom
+        Cursor = crVSplit
+        MinSize = 20.000000000000000000
+        Position.X = 5.000000000000000000
+        Position.Y = 620.000000000000000000
+        Size.Width = 287.000000000000000000
+        Size.Height = 8.000000000000000000
+        Size.PlatformDefault = False
+      end
+      object tbcPieces: TTabControl
+        Align = Client
+        Margins.Top = 50.000000000000000000
+        Size.Width = 287.000000000000000000
+        Size.Height = 565.000000000000000000
+        Size.PlatformDefault = False
+        TabIndex = 1
+        TabOrder = 1
+        TabPosition = PlatformDefault
+        Sizes = (
+          287s
+          539s
+          287s
+          539s)
+        object tabPieces: TTabItem
+          CustomIcon = <
+            item
+            end>
+          IsSelected = False
+          Size.Width = 71.000000000000000000
+          Size.Height = 26.000000000000000000
+          Size.PlatformDefault = False
+          StyleLookup = ''
+          TabOrder = 0
+          Text = 'tabPieces'
+          ExplicitSize.cx = 71.000000000000000000
+          ExplicitSize.cy = 26.000000000000000000
+          object lstPieces: TListBox
+            Align = Client
+            Size.Width = 287.000000000000000000
+            Size.Height = 539.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 3
+            OnDblClick = lstPiecesDblClick
+            Columns = 5
+            DisableFocusEffect = True
+            ItemHeight = 90.000000000000000000
+            ItemWidth = 90.000000000000000000
+            DefaultItemStyles.ItemStyle = ''
+            DefaultItemStyles.GroupHeaderStyle = ''
+            DefaultItemStyles.GroupFooterStyle = ''
+            ListStyle = Horizontal
+            Viewport.Width = 283.000000000000000000
+            Viewport.Height = 535.000000000000000000
+            object lbhCorners: TListBoxGroupHeader
+              Size.Width = 90.000000000000000000
+              Size.Height = 90.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 3
+              Text = 'lbhCorners'
+            end
+            object lbiCorner1: TListBoxItem
+              Position.Y = 90.000000000000000000
+              Size.Width = 90.000000000000000000
+              Size.Height = 90.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 0
+              Text = 'lbiCorner1'
+              OnPaint = lbiCorner1Paint
+            end
+            object lbi1: TListBoxItem
+              Position.Y = 180.000000000000000000
+              Size.Width = 90.000000000000000000
+              Size.Height = 90.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 1
+              Text = 'lbi1'
+            end
+            object lstBorders: TListBoxGroupHeader
+              Position.Y = 270.000000000000000000
+              Size.Width = 90.000000000000000000
+              Size.Height = 90.000000000000000000
+              Size.PlatformDefault = False
+              TabOrder = 2
+              Text = 'lstBorders'
+            end
+          end
+        end
+        object tabArrange: TTabItem
+          CustomIcon = <
+            item
+            end>
+          IsSelected = True
+          Size.Width = 80.000000000000000000
+          Size.Height = 26.000000000000000000
+          Size.PlatformDefault = False
+          StyleLookup = ''
+          TabOrder = 0
+          Text = 'tabArrange'
+          ExplicitSize.cx = 80.000000000000000000
+          ExplicitSize.cy = 26.000000000000000000
+          object pbArrange: TPaintBox
+            Align = Client
+            RotationCenter.X = 0.000000000000000000
+            RotationCenter.Y = 0.000000000000000000
+            Size.Width = 287.000000000000000000
+            Size.Height = 499.000000000000000000
+            Size.PlatformDefault = False
+            OnPaint = pbArrangePaint
+          end
+          object tlbArrange: TToolBar
+            Size.Width = 287.000000000000000000
+            Size.Height = 40.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            object btnNext: TSpeedButton
+              Align = Right
+              Position.X = 232.000000000000000000
+              Size.Width = 55.000000000000000000
+              Size.Height = 40.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Next'
+              OnClick = btnNextClick
+            end
+            object btnMatch: TSpeedButton
+              Align = Right
+              Position.X = 170.000000000000000000
+              Size.Width = 62.000000000000000000
+              Size.Height = 40.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Match'
+              OnClick = btnMatchClick
+            end
+          end
+        end
+      end
+    end
+    inherited spl1: TSplitter
+      Align = Bottom
+      Position.Y = 633.000000000000000000
+      Size.Width = 297.000000000000000000
+    end
+  end
+  inherited splSlicer: TSplitter
+    Position.X = 297.000000000000000000
+    Size.Height = 680.000000000000000000
+  end
+  object splRight: TSplitter
+    Align = Right
+    Cursor = crHSplit
+    MinSize = 20.000000000000000000
+    Position.X = 1231.000000000000000000
+    Size.Width = 9.000000000000000000
+    Size.Height = 680.000000000000000000
+    Size.PlatformDefault = False
+  end
+end

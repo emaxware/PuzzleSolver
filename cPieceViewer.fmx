@@ -1,0 +1,54 @@
+object fraPieceViewer: TfraPieceViewer
+  Size.Width = 320.000000000000000000
+  Size.Height = 240.000000000000000000
+  Size.PlatformDefault = False
+  object tlbPieceViewer: TToolBar
+    Size.Width = 320.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object btnLeft: TSpeedButton
+      Align = Left
+      Size.Width = 33.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = 'arrowlefttoolbutton'
+      Text = 'btnLeft'
+      OnClick = btnLeftClick
+    end
+    object btnRight: TSpeedButton
+      Align = Left
+      Position.X = 33.000000000000000000
+      Size.Width = 33.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = 'arrowrighttoolbutton'
+      Text = 'btnLeft'
+      OnClick = btnLeftClick
+    end
+    object btnReset: TSpeedButton
+      Align = Right
+      Position.X = 287.000000000000000000
+      Size.Width = 33.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = 'cleareditbutton'
+      Text = 'btnLeft'
+    end
+  end
+  object boxPaint: TScrollBox
+    Align = Client
+    Size.Width = 320.000000000000000000
+    Size.Height = 207.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    OnPaint = boxPaintPaint
+    Viewport.Width = 304.000000000000000000
+    Viewport.Height = 191.000000000000000000
+    object pbPaint: TPaintBox
+      Size.Width = 350.000000000000000000
+      Size.Height = 350.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+end

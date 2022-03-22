@@ -1,5 +1,5 @@
 inherited fraSegmentViewer: TfraSegmentViewer
-  inherited fraBitmapViewerSlicer: TfraBitmapViewer
+  inherited fraBitmapViewer: TfraBitmapViewer
     inherited imgBitmap: TImageViewer
       Viewport.Width = 376.000000000000000000
       Viewport.Height = 600.000000000000000000

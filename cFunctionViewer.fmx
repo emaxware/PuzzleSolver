@@ -2,7 +2,7 @@ object fraFunctionViewer: TfraFunctionViewer
   Size.Width = 662.000000000000000000
   Size.Height = 635.000000000000000000
   Size.PlatformDefault = False
-  inline fraBitmapViewerSlicer: TfraBitmapViewer
+  inline fraBitmapViewer: TfraBitmapViewer
     Align = Client
     Size.Width = 380.000000000000000000
     Size.Height = 635.000000000000000000
@@ -20,7 +20,13 @@ object fraFunctionViewer: TfraFunctionViewer
       inherited stat1: TStatusBar
         Size.Width = 380.000000000000000000
         inherited lblStatus: TLabel
-          Size.Width = 336.000000000000000000
+          Size.Width = 170.000000000000000000
+        end
+        inherited tckZoom: TComboTrackBar
+          Position.X = 275.000000000000000000
+        end
+        inherited lblZoom: TLabel
+          Position.X = 209.000000000000000000
         end
       end
     end
@@ -41,8 +47,8 @@ object fraFunctionViewer: TfraFunctionViewer
       Size.Height = 305.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
-      Viewport.Width = 264.000000000000000000
-      Viewport.Height = 301.000000000000000000
+      Viewport.Width = 268.000000000000000000
+      Viewport.Height = 305.000000000000000000
     end
     object pnlLeft: TPanel
       Align = Top
