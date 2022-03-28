@@ -22,7 +22,7 @@ inherited fraArrangeViewer: TfraArrangeViewer
         end
         inherited tckZoom: TComboTrackBar
           Min = 0.100000000000000000
-          Value = 0.500000007450580600
+          Value = 0.700000010430812800
           Frequency = 0.100000001490116100
           Position.X = 820.000000000000000000
           OnChange = fraBitmapViewertckZoomChange
@@ -80,16 +80,16 @@ inherited fraArrangeViewer: TfraArrangeViewer
         TabPosition = PlatformDefault
         Sizes = (
           287s
-          539s
+          560s
           287s
-          539s)
+          560s)
         object tabPieces: TTabItem
           CustomIcon = <
             item
             end>
           IsSelected = False
-          Size.Width = 71.000000000000000000
-          Size.Height = 26.000000000000000000
+          Size.Width = 0.000000000000000000
+          Size.Height = 5.000000000000000000
           Size.PlatformDefault = False
           StyleLookup = ''
           TabOrder = 0
@@ -99,7 +99,7 @@ inherited fraArrangeViewer: TfraArrangeViewer
           object lstPieces: TListBox
             Align = Client
             Size.Width = 287.000000000000000000
-            Size.Height = 539.000000000000000000
+            Size.Height = 560.000000000000000000
             Size.PlatformDefault = False
             TabOrder = 3
             OnDblClick = lstPiecesDblClick
@@ -152,8 +152,8 @@ inherited fraArrangeViewer: TfraArrangeViewer
             item
             end>
           IsSelected = True
-          Size.Width = 80.000000000000000000
-          Size.Height = 26.000000000000000000
+          Size.Width = 0.000000000000000000
+          Size.Height = 5.000000000000000000
           Size.PlatformDefault = False
           StyleLookup = ''
           TabOrder = 0
@@ -165,7 +165,7 @@ inherited fraArrangeViewer: TfraArrangeViewer
             RotationCenter.X = 0.000000000000000000
             RotationCenter.Y = 0.000000000000000000
             Size.Width = 287.000000000000000000
-            Size.Height = 499.000000000000000000
+            Size.Height = 520.000000000000000000
             Size.PlatformDefault = False
             OnPaint = pbArrangePaint
           end
@@ -176,8 +176,8 @@ inherited fraArrangeViewer: TfraArrangeViewer
             TabOrder = 1
             object btnNext: TSpeedButton
               Align = Right
-              Position.X = 232.000000000000000000
-              Size.Width = 55.000000000000000000
+              Position.X = 164.000000000000000000
+              Size.Width = 41.000000000000000000
               Size.Height = 40.000000000000000000
               Size.PlatformDefault = False
               Text = 'Next'
@@ -185,11 +185,37 @@ inherited fraArrangeViewer: TfraArrangeViewer
             end
             object btnMatch: TSpeedButton
               Align = Right
-              Position.X = 170.000000000000000000
-              Size.Width = 62.000000000000000000
+              Position.X = 205.000000000000000000
+              Size.Width = 41.000000000000000000
               Size.Height = 40.000000000000000000
               Size.PlatformDefault = False
               Text = 'Match'
+              OnClick = btnMatchClick
+            end
+            object lblScore: TLabel
+              Align = Client
+              Size.Width = 123.000000000000000000
+              Size.Height = 40.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'XXXXXXXX'
+              TabOrder = 0
+            end
+            object btnPrev: TSpeedButton
+              Align = Right
+              Position.X = 123.000000000000000000
+              Size.Width = 41.000000000000000000
+              Size.Height = 40.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Prev'
+              OnClick = btnNextClick
+            end
+            object btnSkip: TSpeedButton
+              Align = Right
+              Position.X = 246.000000000000000000
+              Size.Width = 41.000000000000000000
+              Size.Height = 40.000000000000000000
+              Size.PlatformDefault = False
+              Text = 'Skip'
               OnClick = btnMatchClick
             end
           end

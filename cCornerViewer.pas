@@ -105,20 +105,21 @@ begin
         continue
       end;
 
-      for var j := 0 to sides.Count-1 do
-      begin
-        var slices := sides[j].DetectSlices(Round(sliHeadLength.Value), sliAngleRatio.Value);
-        if (slices = nil) or (slices.Count = 0) then
-        begin
-          sides.free;
-          slices.free;
-          Start(fScan, i);
-          continue
-        end;
-        sides[j].Slices := slices;
-      end;
-
-      fScan.Pieces[i].Sides := sides;
+      // TODO : replace slices
+//      for var j := 0 to sides.Count-1 do
+//      begin
+//        var slices := sides[j].DetectSlices(Round(sliHeadLength.Value), sliAngleRatio.Value);
+//        if (slices = nil) or (slices.Count = 0) then
+//        begin
+//          sides.free;
+//          slices.free;
+//          Start(fScan, i);
+//          continue
+//        end;
+//        sides[j].Slices := slices;
+//      end;
+//
+//      fScan.Pieces[i].Sides := sides;
     end;
   end;
 
@@ -442,84 +443,85 @@ begin
 
       for var i := 0 to fPiece.Sides.Count-1 do
       begin
-        if fPiece.Sides[i].Slices = nil then
-        begin
-          var slices := fPiece.Sides[i].DetectSlices(
-            headsize
-//            , 0.96
-            , sliAngleRatio.Value
-            , procedure(
-              ATraceLevel:TSide.TSideTraceLevel;
-              AHead : TSlice;
-              ASlice : TSlice;
-              ASegments : TSegments<TSlice>
-            )
-            begin
-              repeat
-                case ATraceLevel of
-//                    TSideTraceLevel.tlByError, TScanPiece.TTraceLevel.tlByErrorFixed:
-//                      if not rbShowErrors.IsChecked then
-//                        exit;
-                  TSide.TSideTraceLevel.stlByPoint:
-                    if not rbByPoint.IsChecked then
-                      exit;
-                  TSide.TSideTraceLevel.stlBySegment:
-                    if not rbBySegment.IsChecked then
-                      exit;
-                end;
-
-                var canvas := fOverlay.Canvas;
-                var scale := fraBitmapViewer.imgBitmap.BitmapScale;
-
-                canvas.BeginScene;
-                var sv := canvas.SaveState;
-                try
-                  for var i := 0 to ASegments.Count-1 do
-                    canvas.Draw(ASegments[i], scale);
-
-                  canvas.Draw(ASlice, scale, TAlphaColorRec.Orange);
-                  canvas.Draw(AHead, scale, TAlphaColorRec.White)
-                finally
-                  canvas.RestoreState(sv);
-                  canvas.EndScene;
-                  fraBitmapViewer.imgBitmap.Repaint;
-                end;
-
-                while fNextStep.WaitFor(100) = TWaitResult.wrTimeout do
-                  Application.ProcessMessages;
-
-                if fRepaintOverlay then
-                begin
-                  fRepaintOverlay := false;
-                  continue
-                end;
-
-                break
-              until false
-            end
-          );
-          fPiece.Sides[i].Slices := slices
-        end;
+          // TODO : replace slices
+//        if fPiece.Sides[i].Slices = nil then
+//        begin
+//          var slices := fPiece.Sides[i].DetectSlices(
+//            headsize
+////            , 0.96
+//            , sliAngleRatio.Value
+//            , procedure(
+//              ATraceLevel:TSide.TSideTraceLevel;
+//              AHead : TSlice;
+//              ASlice : TSlice;
+//              ASegments : TSegments<TSlice>
+//            )
+//            begin
+//              repeat
+//                case ATraceLevel of
+////                    TSideTraceLevel.tlByError, TScanPiece.TTraceLevel.tlByErrorFixed:
+////                      if not rbShowErrors.IsChecked then
+////                        exit;
+//                  TSide.TSideTraceLevel.stlByPoint:
+//                    if not rbByPoint.IsChecked then
+//                      exit;
+//                  TSide.TSideTraceLevel.stlBySegment:
+//                    if not rbBySegment.IsChecked then
+//                      exit;
+//                end;
+//
+//                var canvas := fOverlay.Canvas;
+//                var scale := fraBitmapViewer.imgBitmap.BitmapScale;
+//
+//                canvas.BeginScene;
+//                var sv := canvas.SaveState;
+//                try
+//                  for var i := 0 to ASegments.Count-1 do
+//                    canvas.Draw(ASegments[i], scale);
+//
+//                  canvas.Draw(ASlice, scale, TAlphaColorRec.Orange);
+//                  canvas.Draw(AHead, scale, TAlphaColorRec.White)
+//                finally
+//                  canvas.RestoreState(sv);
+//                  canvas.EndScene;
+//                  fraBitmapViewer.imgBitmap.Repaint;
+//                end;
+//
+//                while fNextStep.WaitFor(100) = TWaitResult.wrTimeout do
+//                  Application.ProcessMessages;
+//
+//                if fRepaintOverlay then
+//                begin
+//                  fRepaintOverlay := false;
+//                  continue
+//                end;
+//
+//                break
+//              until false
+//            end
+//          );
+//          fPiece.Sides[i].Slices := slices
+//        end;
 
         var canvas := fOverlay.Canvas;
         var scale := fraBitmapViewer.imgBitmap.BitmapScale;
 
-        canvas.BeginScene;
-        var sv := canvas.SaveState;
+//        canvas.BeginScene;
+//        var sv := canvas.SaveState;
 //        canvas.Clear(0);
 //        canvas.Stroke.Color := TAlphaColorRec.Blue;
 //        canvas.Stroke.Thickness := 1;
 //        canvas.DrawRect(RectF(0, 0, fOverlayRect.Width-1, fOverlayRect.Height-1), 1);
-        canvas.SetMatrix(TMatrix.CreateTranslation(2, 2));
-        try
-          for var j := 0 to fPiece.Sides[i].Slices.Count-1 do
-            canvas.draw(fPiece.Sides[i].Slices[j], scale)
-        finally
-          canvas.RestoreState(sv);
-          canvas.EndScene;
-          fraBitmapViewer.imgBitmap.Repaint;
-          Application.ProcessMessages
-        end;
+//        canvas.SetMatrix(TMatrix.CreateTranslation(2, 2));
+//        try
+//          for var j := 0 to fPiece.Sides[i].Slices.Count-1 do
+//            canvas.draw(fPiece.Sides[i].Slices[j], scale)
+//        finally
+//          canvas.RestoreState(sv);
+//          canvas.EndScene;
+//          fraBitmapViewer.imgBitmap.Repaint;
+//          Application.ProcessMessages
+//        end;
       end
     finally
       fraBitmapViewer.imgBitmap.Repaint
@@ -528,7 +530,7 @@ begin
     mmoProps.Lines.clear;
     for var i := 0 to fPiece.Sides.Count-1 do
     begin
-      if fPiece.Sides[i].Slices = nil then
+//      if fPiece.Sides[i].Slices = nil then
         mmoProps.Lines.add(format('[%d] pts:%d len:%.2f/%.2f slices:none'// %.2f'#176'/%.2f'#176
         , [
           i
@@ -538,28 +540,28 @@ begin
   //        , fPiece.Sides[i].TailAngle
   //        , fPiece.Sides[i].HeadAngle
         ]))
-      else
-      begin
-        mmoProps.Lines.add(format('[%d] pts:%d len:%.2f/%.2f slices:%d'// %.2f'#176'/%.2f'#176
-        , [
-          i
-          , fPiece.Sides[i].Count
-          , fPiece.Sides[i].length
-          , fPiece.Sides[i].LengthRatio
-          , fPiece.Sides[i].Slices.Count
-  //        , fPiece.Sides[i].TailAngle
-  //        , fPiece.Sides[i].HeadAngle
-        ]));
-        for var j := 0 to fPiece.Sides[i].Slices.Count-1 do
-        with fpiece.Sides[i].Slices[j] do
-          mmoProps.Lines.Add(format('  [%d] pts%d len:%.2f/%.2f'
-          , [
-            j
-            , Count
-            , Length
-            , LengthRatio
-            ]))
-      end;
+//      else
+//      begin
+//        mmoProps.Lines.add(format('[%d] pts:%d len:%.2f/%.2f slices:%d'// %.2f'#176'/%.2f'#176
+//        , [
+//          i
+//          , fPiece.Sides[i].Count
+//          , fPiece.Sides[i].length
+//          , fPiece.Sides[i].LengthRatio
+//          , fPiece.Sides[i].Slices.Count
+//  //        , fPiece.Sides[i].TailAngle
+//  //        , fPiece.Sides[i].HeadAngle
+//        ]));
+//        for var j := 0 to fPiece.Sides[i].Slices.Count-1 do
+//        with fpiece.Sides[i].Slices[j] do
+//          mmoProps.Lines.Add(format('  [%d] pts%d len:%.2f/%.2f'
+//          , [
+//            j
+//            , Count
+//            , Length
+//            , LengthRatio
+//            ]))
+//      end;
     end;
 
   finally

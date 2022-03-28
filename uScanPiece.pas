@@ -26,6 +26,10 @@ const
 type
   TPoints = class;
 
+  TAlphaColorHelper = record helper for TAlphaColor
+    function ScoreDiff(AColor:TAlphaColor):Single;
+  end;
+
 //  TPointsHelper = class helper for TPoints
 //  public
 //    function TailRatio(ALength:Integer):Extended;
@@ -45,11 +49,12 @@ type
 //  TSliceDetector = class(TSegmentDetector)
 //  public
 //  end;
+//  TAlphaColorHelper = record helper for TAlphaColorRec
+//    function Diff(AColor:TAlphaColorRec):TAlphaColorRec;
+//  end;
 
   TPoints = class(TList<TPoint>)
   public
-    function asPolygon:TPolygon;
-    function Length:extended;
     function LengthRatio:Extended;
 
     procedure Unknot;
@@ -62,8 +67,6 @@ type
 
     procedure HeadAnglePts(ALength:Integer; var AStartPt, AMidPt, AEndPt:TPoint);
     procedure TailAnglePts(ALength:Integer; var AStartPt, AMidPt, AEndPt:TPoint);
-
-    function RotateByRadian(ARotation:Single; ARotationPoint:TPointF; var ABoundingRect:TRectF; AScale:Single = 1):TArray<TPointF>;
   end;
 
   TSegment = class(TPoints)
@@ -104,10 +107,6 @@ type
   end;
 
   TSide = class(TSegment)
-  protected
-    fSlices: TSegments<TSlice>;
-    fHeadAngle, fTailAngle: single;
-    procedure SetSlices(const Value: TSegments<TSlice>);
   public
     type
       TSideTraceLevel = (stlPreview, stlByPoint, stlBySegment);
@@ -118,19 +117,24 @@ type
         ; ASlice:TSlice
         ; ASlices:TSegments<TSlice>
         );
-
+  protected
+    fSlices: TSegments<TSlice>;
+    fHeadAngle, fTailAngle: single;
+    procedure SetSlices(const Value: TSegments<TSlice>);
+    function DetectSlices(AHeadsize:integer; AStraightRatio:Single; AOnTrace:TOnTraceSide = nil; bReverse:Boolean = false; AOffset:Integer = 0):TSegments<TSlice>;
+  public
 //    constructor Create(AHeadsize:integer);//APoints:TPoints; AOrientation:TSegmentOrientation);
 
-    function DetectSlices(AHeadsize:integer; AStraightRatio:Single; AOnTrace:TOnTraceSide = nil; bReverse:Boolean = false; AOffset:Integer = 0):TSegments<TSlice>;
     destructor Destroy; override;
 
-    property Slices:TSegments<TSlice> read fSlices write SetSlices;
+//    property Slices:TSegments<TSlice> read fSlices write SetSlices;
     property HeadAngle:single read fHeadAngle;
     property TailAngle:single read fTailAngle;
   end;
 
   TScanPiece = class
   protected
+    fAvgColor: TAlphaColor;
     FPoints:TPoints;
     FWidth: Integer;
     FHeight: Integer;
@@ -143,7 +147,7 @@ type
     function GetJSON: TJSONObject;
     procedure SetJSON(const Value: TJSONObject);
 
-    procedure _CalcDimensions;
+//    procedure _CalcDimensions;
   public
     type
       TTraceLevel = (tlManual, tlPreview, tlByError, tlByErrorFixed, tlByPoint, tlBySegment);
@@ -165,6 +169,7 @@ type
 //    class function DetectSlices(ASegment:TSegment; AHeadsize:integer; AStraightRatio:Single; AOnTrace:TOnTrace = nil; bReverse:Boolean = false; AOffset:Integer = 0):TSegments;
     function DetectSides(AHeadsize:integer; AStraightRatio, AMaxAngle:Single; AOnTrace:TOnTrace = nil; AOnManual:TOnManual = nil; bManualMode:Boolean = false):TSegments<TSide>;
 
+    property AvgColor:TAlphaColor read fAvgColor;
     property Width:Integer read FWidth;
     property Height:Integer read FHeight;
     property Points:TPoints read FPoints;
@@ -177,7 +182,7 @@ type
   TArrPiece = class;
   TArrSide = class;
 
-  TArr<T> = class(TList<T>)
+  TArr<T> = class
   protected
     fItem:T;
     fCollection:TArrCollection;
@@ -192,25 +197,40 @@ type
   private
     fSide2: TArrSide;
     fSide1: TArrSide;
+    fGridMove: TPoint;
+    fGridMove2: TPoint;
+    fGridMove1: TPoint;
+    fSide1FromTopIndex, fSide2FromTopIndex:integer;
   public
     constructor Create(ASide1, ASide2:TArrSide);
 
     function OtherSide(ASide:TArrSide):TArrSide;
     property Side1:TArrSide read fSide1;
     property Side2:TArrSide read fSide2;
+    property GridMove1:TPoint read fGridMove1;
+    property GridMove2:TPoint read fGridMove2;
   end;
 
+  TPatch = record
+    perimeterPts:TArray<TPoint>;
+    insidePt:TPoint;
+//    score:single;
+  end;
+
+//  TPatchScoreArrayHelper = record helper for TArray<TPatchScore>
+//    function ToSingleScore:TArray<Single>;
+//  end;
+
   TArrSide = class(TArr<TSide>)
-  private
-    fArrSideIndex: integer;
   protected
+    fArrSideIndex: integer;
     fIsAfterBorder: Boolean;
     fSideIndex: integer;
     fLink: TArrLink;
     fIsOuty: boolean;
     fIsBeforeBorder: Boolean;
     fPiece: TArrPiece;
-    fAngle: single;
+    fSideAngle: extended;
 
     fHypPointChecked:Boolean;
 
@@ -220,7 +240,7 @@ type
 //    fCornersCenter: TPointF;
     fCenter:TPointF;
     function GetCenter: TPointF;
-    function GetAngle: single;
+    function GetAngle: extended;
     function GetIsOuty: boolean;
     function GetHypPointIndex: integer;
     function GetLeadingHypLength: single;
@@ -228,10 +248,26 @@ type
 //    function GetCornersCenter: TPointF;
     function GetHypPoint: TPointF;
     procedure CheckHypPoint; virtual;
+
+    function ScoreMatch(ASide:TArrSide; out AScore:Single):boolean; overload;
+    function ScoreMatch(AScore:TArray<TAlphaColor>; ASide:TArrSide; const APositions:array of Single; ARadius:single; out AMatchScore:TArray<Single>):boolean; overload;
   public
     constructor Create(ACollection:TArrCollection; APiece:TArrPiece; ASideIndex:integer; AItem:TSide);
 
-    function ScoreMatch(ASide:TArrSide; out AScore:Single):boolean;
+    function CreatePatch(APosition, ARadius:single; out APatch:TPatch):boolean; overload;
+    function CreatePatches(const APositions:array of Single; ARadius:single; out APatches:TArray<TPatch>):boolean;
+
+    function ScorePatch(APosition, ARadius:single; out AScore:TAlphaColor):boolean; overload;
+    function ScorePatch(APatch:TPatch; out AScore:TAlphaColor):boolean; overload;
+
+    function ScorePatches(const APositions:array of Single; ARadius:single; out AScores:TArray<TAlphaColor>):boolean; overload;
+    function ScorePatches(const APatches:array of TPatch; out AScores:TArray<TAlphaColor>):boolean; overload;
+
+    function ScoreMatch(ASide:TArrSide; const APositions:array of Single; ARadius:single; out AMatchScore:TArray<Single>):boolean; overload;
+    //    function ScorePatch(APosition, ARadius:single; out AScore:Single):boolean; overload;
+
+    function MatchingSides(const APositions:array of Single; ARadius:integer; ATierCount:Integer = 50):TArray<TArrSide>;
+
     function AddLink(ASide:TArrSide):TArrLink;
 
     property Piece:TArrPiece read fPiece;
@@ -242,8 +278,8 @@ type
     property ArrSideIndex:integer read fArrSideIndex;
 //    property CornersCenter:TPointF read GetCornersCenter;
 
-    property Center:TPointF read GetCenter;
-    property Angle:single read GetAngle;
+    property SideCenter:TPointF read GetCenter;
+    property Angle:extended read GetAngle;
     property IsOuty:boolean read GetIsOuty;
     property HypPoint:TPointF read GetHypPoint;
     property HypPointIndex:integer read GetHypPointIndex;
@@ -252,20 +288,31 @@ type
   end;
 
   TArrPiece = class(TArr<TScanPiece>)
+  private
+    fPieceCenter: TPointF;
   protected
+    fGridSides: TArray<TArrSide>;
+    fGridPos: TPoint;
     fIsCorner: boolean;
     fSides: TList<TArrSide>;
     fIsBorder: boolean;
     fPieceIndex: integer;
+    fTopSideIndex: integer;
   public
     constructor Create(ACollection:TArrCollection; APieceIndex:integer; AItem:TScanPiece);
     destructor Destroy; override;
 
     function SidesLinked:integer;
+    function GetBitmap:TBitmap;
+
     property IsCorner:boolean read fIsCorner;
     property IsBorder:boolean read fIsBorder;
     property Sides:TList<TArrSide> read fSides;
     property PieceIndex:integer read fPieceIndex;
+    property GridPos:TPoint read fGridPos;
+    property TopSideIndex:integer read fTopSideIndex;
+    property GridSides:TArray<TArrSide> read fGridSides;
+    property PieceCenter:TPointF read fPieceCenter;
   end;
 
   TArrCollection = class
@@ -277,6 +324,8 @@ type
     fScan:TScanCollection;
     fCorners: TList<TArrPiece>;
     fBorders: TList<TArrPiece>;
+    fGrid: TDictionary<TPoint, TArrPiece>;
+    fGridPiece: TDictionary<TArrPiece, TPoint>;
   public
     constructor Create(ACollection:TScanCollection);
     destructor Destroy; override;
@@ -288,6 +337,8 @@ type
     property Corners:TList<TArrPiece> read fCorners;
     property Borders:TList<TArrPiece> read fBorders;
     property Links:TDictionary<TArrSide,TArrLink> read fLinks;
+    property GridPos:TDictionary<TPoint,TArrPiece> read fGrid;
+    property GridPiece:TDictionary<TArrPiece, TPoint> read fGridPiece;
   end;
 
   TScanCollection = class
@@ -307,6 +358,9 @@ type
     procedure SetJSON(const Value: TJSONObject);
 //    procedure ResetBitmapData;
   public
+    type
+      TTraceDetection = reference to function(APiece:TScanPiece):Boolean;
+
     constructor create;
     destructor Destroy; override;
 
@@ -318,7 +372,7 @@ type
 
     function GetPieceBitmap(APieceIndex:integer):TBitmap;
 //    function DetectPiece(AStartPoint:TPoint; ASpan:integer; var AScanPiece:TScanPiece; var APieceOrigin:TPoint):boolean;
-    function DetectPieces(var ABitmapResult:TBitmap):boolean;
+    function DetectPieces(var ABitmapResult:TBitmap; ATracer:TTraceDetection = nil):boolean;
     procedure AddPiece(AOrigin:TPoint; APiece:TScanPiece);
 
     property MaxPieceWidth:integer read fMaxPieceWidth;
@@ -336,10 +390,10 @@ type
     rotatedPieceBoundary:TRectF;
     rotationAngle
 //      , leftMargin, rightMargin, CenterWidth
-      :single;
-    rotatedSide:array[0..3] of TArray<TPointF>;
+      :extended;
+    rotatedSide:array[0..3] of TPolygon;
     rotatedCenter:array[0..3] of TPointF;
-    rotatedPiece:TArray<TPointF>;
+    rotatedPiece:TPolygon;
     const DirectionAngles:array[0..3] of Single = (
       0,   //down
       -90, //left
@@ -385,42 +439,10 @@ uses
   , m3.framehelper.fmx
   , uLib
   , m3.pointhelper
+  , m3.bitmaphelper.fmx
   ;
 
 { TScanPiece }
-
-procedure TScanPiece._CalcDimensions;
-begin
-  var lowx := 0;
-  var lowy := 0;
-  var highx := 0;
-  var highy := 0;
-//  fCenter := PointF(0, 0);
-
-  for var pt in FPoints do
-  begin
-//    FCenter := fCenter + pt.toPointF;
-    if pt.X > highx then
-      highx := pt.x;
-    if pt.y > highY then
-      highy := pt.y;
-    if pt.x < lowx then
-      lowx := pt.x;
-    if pt.y < lowy then
-      lowy := pt.y
-  end;
-
-//  FCenter := fCenter / FPoints.Count;
-
-  fWidth := highx - lowx + 1;
-  fHeight := highy - lowy + 1;
-
-//  if (lowx > 0) or (lowy > 0) then
-//  asm
-//    Int 03
-//  end;
-
-end;
 
 constructor TScanPiece.create;
 begin
@@ -818,6 +840,7 @@ end;
 function TScanCollection.DetectPieces;
 var
   data:TBitmapData;
+  sumR, sumG, sumB, sumCnt:Cardinal;
   APerimeter,AFound:TList<TPoint>;
   AReserve:TStack<TPoint>;
   AFoundColor, ASearchedColor, APerimeterColor:TAlphaColor;
@@ -865,6 +888,10 @@ var
     begin
       result := true;
 
+      Inc(sumCnt);
+      Inc(sumR, colorrec.R);
+      Inc(sumG, colorrec.G);
+      Inc(sumB, colorrec.B);
       data.SetPixel(AOrigin.X, AOrigin.Y, AFoundColor);
 
 {$B+}
@@ -894,6 +921,19 @@ var
     end;
   end;
 
+  procedure BridgeGap(p1, p2:TPoint; AList:TList<TPoint>);
+  begin
+    if (Abs(p1.X - p2.X) < 2) and (Abs(p1.Y - p2.Y) < 2) then
+    else
+    begin
+      var midPt := p1.toPointF.MidLinePt(p2).Round;
+      BridgeGap(p1, midPt, AList);
+      var lastadded := AList.Last;
+      AList.Add(midPt);
+      BridgeGap(midPt, p2, AList);
+    end;
+  end;
+
 begin
   AFoundColor := PieceFillColor;
   ASearchedColor := SearchedColor;
@@ -903,8 +943,7 @@ begin
   APerimeter := TList<TPoint>.create;
   AFound := TList<TPoint>.create;
   AReserve := TStack<TPoint>.create;
-  ABitmapResult := TBitmap.create(self.Bitmap.Width, self.Bitmap.Height);
-  ABitmapResult.CopyFromBitmap(self.Bitmap);
+  ABitmapResult := self.Bitmap.Clone;
   try
 //    if self.Bitmap.Map(TMapAccess.ReadWrite, data) then
     if ABitmapResult.Map(TMapAccess.ReadWrite, data) then
@@ -927,47 +966,36 @@ begin
           end
           else
           begin
+            sumR := 0;
+            sumG := 0;
+            sumB := 0;
+            sumCnt := 0;
             DetectPiece(Point(x, y), 0);
 
             if APerimeter.Count > 10 then
             begin
-              var orig := APerimeter[0];
-              for var i := 1 to APerimeter.Count-1 do
-              begin
-                if orig.X > APerimeter[i].x then
-                  orig.x := APerimeter[i].x;
-                if orig.y > APerimeter[i].y then
-                  orig.y := APerimeter[i].y;
-              end;
+              var newPerimeter := TList<TPoint>.create;
+              newPerimeter.Add(APerimeter.First);
+              var avgColor := TAlphaColorF.Create(sumR/sumCnt, sumG/sumCnt, sumB/sumCnt, 1).ToAlphaColor;
 
-              for var i := 0 to APerimeter.Count-1 do
-              begin
-                var pt := APerimeter[i];
-                pt.x := pt.X - orig.X;
-                pt.y := pt.Y - orig.Y;
-                APerimeter[i] := pt
-              end;
-
-              var scanPiece := TScanPiece.create;
-              scanPiece.Points.Add(APerimeter[0]);
-
+              // assemble points into contiguos perimeter
               APerimeter.Delete(0);
               while APerimeter.Count > 0 do
               begin
                 var found := false;
-                for var d := 1 to 3 do
+                for var d := 2 to 2 do
                 begin
                   for var i := 0 to APerimeter.Count-1 do
                   begin
-                    if (abs(APerimeter[i].x-scanPiece.Points.Last.x) < d)
-                        and (abs(APerimeter[i].y-scanPiece.Points.Last.y) < d)
+                    if (abs(APerimeter[i].x-newPerimeter.Last.x) < 2)
+                        and (abs(APerimeter[i].y-newPerimeter.Last.y) < 2)
     //                  or
     //                    (abs(APerimeter[i].x-scanPiece.Points.Last.x) = 0)
     //                    and (abs(APerimeter[i].y-scanPiece.Points.Last.y) < 2)
                     then
                     begin
                       found := true;
-                      scanPiece.Points.Add(APerimeter[i]);
+                      newPerimeter.Add(APerimeter[i]);
                       APerimeter.delete(i);
                       break
                     end
@@ -979,8 +1007,50 @@ begin
                   break
               end;
 
-              scanPiece._CalcDimensions;
-              self.AddPiece(orig, scanPiece);
+              // bridge any gaps in perimeter
+              APerimeter.Clear;
+              for var i := 0 to newPerimeter.Count-2 do
+              begin
+                APerimeter.Add(newPerimeter[i]);
+                BridgeGap(newPerimeter[i], newPerimeter[i+1], APerimeter);
+              end;
+
+              APerimeter.Add(newPerimeter.Last);
+              BridgeGap(newPerimeter.Last, newPerimeter.First, APerimeter);
+
+              // find perimeter boundary
+              var bound := Rect(APerimeter[0], APerimeter[0]);
+              for var i := 1 to APerimeter.Count-1 do
+              begin
+                if bound.left > APerimeter[i].x then
+                  bound.left := APerimeter[i].x;
+                if bound.top > APerimeter[i].y then
+                  bound.top := APerimeter[i].y;
+
+                if bound.right < APerimeter[i].x then
+                  bound.right := APerimeter[i].x;
+                if bound.bottom < APerimeter[i].y then
+                  bound.bottom := APerimeter[i].y;
+              end;
+
+              // recenter perimeter from origin
+              for var i := 0 to APerimeter.Count-1 do
+              begin
+                var pt := APerimeter[i];
+                pt.x := pt.X - bound.left;
+                pt.y := pt.Y - bound.top;
+                APerimeter[i] := pt
+              end;
+
+              var scanPiece := TScanPiece.create;
+
+              scanPiece.Points.AddRange(APerimeter);
+              scanPiece.fAvgColor := avgColor;
+              scanPiece.FWidth := bound.Width;
+              scanPiece.FHeight := bound.Height;
+
+//              scanPiece._CalcDimensions;
+              self.AddPiece(bound.TopLeft, scanPiece);
               result := true
             end;
 
@@ -1031,7 +1101,7 @@ begin
   else
   try
     var mask := TBitmap.create(Value.Width, Value.Height);
-    mask.Clear(TAlphaColorRec.black);
+    mask.Clear(0);
     var piece := TBitmap.Create(Value.Width, Value.Height);
     piece.Clear(TAlphaColorRec.white);
     var maskBrush := TBrush.Create(TBrushKind.Solid, TAlphaColorRec.White);
@@ -1041,24 +1111,19 @@ begin
         , rect
         , 0, 0);
 
-//      TfrmDebug.Instance.AddBitmap(piece);
-      var poly := Value.Points.asPolygon;
+      var poly := Value.Points.ToArray.AsPointFs.asPolygon;
 
       with mask.Canvas do
       if BeginScene then
       try
-        Stroke.Assign(maskBrush);
+        Fill := maskBrush;
         FillPolygon(poly, 1);
       finally
         EndScene
       end;
 
-//      TfrmDebug.Instance.AddBitmap(mask);
-
-      result := TBitmap.CreateFromBitmapAndMask(piece, mask);
-      fCachedBitmaps.Add(Key, result);
-
-//      TfrmDebug.Instance.AddBitmap(result);
+      result := piece.CloneWithAlphaMask(mask);
+      fCachedBitmaps.Add(Key, result)
     finally
       maskBrush.Free;
       mask.free;
@@ -1134,17 +1199,6 @@ end;
 
 { TPoints }
 
-function TPoints.asPolygon: TPolygon;
-begin
-  SetLength(Result, Count);
-  for var i := 0 to count-1 do
-  with Items[i] do
-  begin
-    result[i].x := x;
-    Result[i].Y := y
-  end;
-end;
-
 //function TPoints.DegreesBetween(ABeginPt, AMidPt, AEndPt: Integer): extended;
 //begin
 //  result := items[AMidPt].DegreesBetween(Items[ABeginPt], Items[AEndPt])
@@ -1200,42 +1254,9 @@ begin
   result := AStartPt.Distance(AEndPt) / result
 end;
 
-function TPoints.length: extended;
-begin
-  result := 0;
-  for var i := 1 to count-1 do
-    result := result + Items[i-1].Distance(Items[i])
-end;
-
 function TPoints.LengthRatio: Extended;
 begin
   result := First.Distance(Last) / length
-end;
-
-function TPoints.RotateByRadian(ARotation: Single;
-  ARotationPoint: TPointF; var ABoundingRect:TRectF; AScale:Single = 1): TArray<TPointF>;
-begin
-  var rslt := TList<TPointF>.create;
-  for var i := 0 to count-1 do
-  begin
-    var pt := Items[i].toPointF.RotateByRadian(ARotation, ARotationPoint, AScale);// (Items[i].toPointF - ARotationPoint).Rotate(ARotation) + ARotationPoint;
-    if i=0 then
-      ABoundingRect := RectF(pt.X, pt.Y, pt.X, pt.Y)
-    else
-    begin
-      if pt.X < ABoundingRect.Left then
-        ABoundingRect.Left := pt.X;
-      if pt.X > ABoundingRect.Right then
-        ABoundingRect.Right := pt.x;
-      if pt.Y < ABoundingRect.Top then
-        ABoundingRect.Top := pt.Y;
-      if pt.Y > ABoundingRect.Bottom then
-        ABoundingRect.Bottom := pt.y
-    end;
-    rslt.Add(pt);
-  end;
-  result := rslt.ToArray;
-  rslt.free
 end;
 
 procedure TPoints.UnKnot;
@@ -1590,7 +1611,9 @@ procedure TArrSide.CheckHypPoint;
 begin
   if not fHypPointChecked then
   begin
-    fAngle := Item.First.Angle(Item.Last);
+    fSideAngle := Item.First.Angle(Item.Last);
+    fSideAngle := Round(fSideAngle * Pi * 16) / (pi * 16);
+    var angleInDeg := RadToDeg(fSideAngle);
     var innyDistance := 0.0;
     var innyIndex := 0;
     var outyDistance := 0.0;
@@ -1643,10 +1666,10 @@ begin
   fSideIndex := ASideIndex;
 end;
 
-function TArrSide.GetAngle: single;
+function TArrSide.GetAngle: extended;
 begin
   CheckHypPoint;
-  result := fAngle;
+  result := fSideAngle;
 end;
 
 function TArrSide.GetCenter: TPointF;
@@ -1685,23 +1708,88 @@ begin
   result := fTrailingHypLength
 end;
 
+function TArrSide.MatchingSides;
+begin
+  var rslts := TList<TPair<TArray<single>,TArrSide>>.Create;
+  var sortedList := TList<TArrSide>.create;
+  var tierList := TList<TPair<integer,TArrSide>>.create;
+  var APatchScore:TArray<TAlphaColor>;
+  if ScorePatches(APositions, ARadius, APatchScore) then
+  try
+    var ASingleScore:single;
+    var APatchScore2:TArray<single>;
+
+    // score all sides
+    for var i := 0 to Collection.Sides.Count-1 do
+      if ScoreMatch(Collection.Sides[i], ASingleScore) then
+        if ScoreMatch(APatchScore, Collection.Sides[i], APositions, ARadius, APatchScore2)
+      then
+      begin
+        var pair := TPair<TArray<single>,TArrSide>.Create(APatchScore2, Collection.Sides[i]);
+        rslts.Add(pair);
+      end;
+
+    // tiered scoring
+    for var t := 1 to ATierCount do
+    begin
+      tierList.clear;
+
+      // extract sorted list for tier
+      for var n := rslts.Count-1 downto 0 do
+      begin
+        var pr := TPair<integer,TArrSide>.Create(0, rslts[n].Value);
+        for var o := 0 to length(rslts[n].Key)-1 do
+        begin
+          if (rslts[n].Key[o] > (1-t*0.01)) or (t = ATierCount) then
+            inc(pr.Key);
+        end;
+
+        // only include in tier if more than 2
+        if pr.Key < 3 then
+          continue;
+
+        var added := false;
+        for var tl := 0 to tierList.Count-1 do
+          if pr.Key > tierList[tl].Key then
+          begin
+            added := true;
+            tierList.Insert(tl, pr);
+            break
+          end;
+
+        if not added then
+          tierList.Add(pr);
+
+        // if added to tierlist, remove from scored list
+        rslts.Delete(n)
+      end;
+
+      // add tierlist to sortedlist
+      for var s := 0 to tierList.Count-1 do
+        sortedList.Add(tierList[s].Value)
+    end
+  finally
+    Result := sortedList.ToArray;
+    tierList.Free;
+    sortedList.free;
+    rslts.free
+  end;
+end;
+
 function TArrSide.ScoreMatch(ASide: TArrSide; out AScore: Single): boolean;
 begin
   result := false;
-  AScore := 0.5;
-  while AScore > 0 do
+  AScore := 0;
+  while true do
   begin
+    if ASide.Link <> nil then
+      break;
+
     if Piece.PieceIndex = ASide.Piece.PieceIndex then
-    begin
-      AScore := 0;
-      break
-    end;
+      break;
 
     if Piece.IsCorner and ASide.Piece.IsCorner then
-    begin
-      AScore := 0;
-      break
-    end;
+      break;
 
     if (IsAfterBorder or IsBeforeBorder) //and (ASide.IsAfterBorder or ASide.IsBeforeBorder)
     then
@@ -1713,24 +1801,317 @@ begin
         if (ASide.IsOuty <> IsOuty) then
         begin
           result := True;
+          AScore := Self.Piece.Item.fAvgColor.ScoreDiff(ASide.Piece.Item.fAvgColor);
           break
         end
         else
-        begin
-          AScore := 0;
           break
-        end;
       end
       else
-      begin
-        AScore := 0;
         break
-      end;
+    end
+    else
+    if not (ASide.IsBeforeBorder or ASide.IsAfterBorder) then
+    begin
+      if (ASide.IsOuty <> IsOuty) then
+      begin
+        result := True;
+        AScore := Self.Piece.Item.fAvgColor.ScoreDiff(ASide.Piece.Item.fAvgColor);
+        break
+      end
+      else
+        break
     end;
     break
   end;
 
 //  result := AScore > 0
+end;
+
+//function TArrSide.ScorePatch(APosition, ARadius: single; out AScore:Single): Boolean;
+//begin
+//  result := ScorePatch(
+//end;
+
+function TArrSide.ScoreMatch(ASide: TArrSide; const APositions:array of Single; ARadius:single;
+  out AMatchScore: TArray<Single>): boolean;
+begin
+  setlength(AMatchScore, 0);
+  var cnt := Length(APositions);
+  var AScores:TArray<TAlphaColor>;
+  if ScorePatches(APositions, ARadius, AScores) then
+    result := ScoreMatch(AScores, ASide, APositions, ARadius, AMatchScore)
+end;
+
+function TArrSide.ScorePatches(const APatches: array of TPatch;
+  out AScores: TArray<TAlphaColor>): boolean;
+begin
+  setlength(AScores, Length(APatches));
+  var AScore:TAlphaColor;
+  for var i := 0 to Length(APatches)-1 do
+  if ScorePatch(APatches[i], AScore) then
+  begin
+    result := true;
+    AScores[i] := AScore
+  end
+  else
+    AScores[i] := 0
+end;
+
+//function TArrSide.CreatePatch(APosition, ARadius: single;
+//  out APatch: TPatch): boolean;
+//begin
+//  result := false;
+//  var ABitmapData:TBitmapData;
+//  var ABitmap := Collection.Scan.GetPieceBitmap(Piece.PieceIndex).Clone;
+//  try
+//    if ABitmap.Map(TMapAccess.ReadWrite, ABitmapData) then
+//    try
+////      result := ScorePatch(ABitmapData, APosition, ARadius, AScore,
+//    finally
+//      ABitmap.Unmap(ABitmapData)
+//    end;
+//  finally
+//    ABitmap.Free
+//  end
+//end;
+
+function TArrSide.CreatePatch(APosition,
+  ARadius: single; out APatch:TPatch): Boolean;
+var
+  perimeter:TList<TPoint>;
+  stop:boolean;
+  insidePt:TPoint;
+  insidePtCount:integer;
+
+  procedure BridgeSide(p1, p2:TPoint; AList:TList<TPoint>);
+  begin
+    if (Abs(p1.X - p2.X) < 2) and (Abs(p1.Y - p2.Y) < 2) then
+    else
+    begin
+      var midPt := p1.toPointF.MidLinePt(p2).Round;
+      BridgeSide(p1, midPt, AList);
+      var lastadded := AList.Last;
+      AList.Add(midPt);
+      BridgeSide(midPt, p2, AList);
+    end;
+  end;
+
+  procedure BridgeArc(p1, center, p2:TPoint; AList:TList<TPoint>; ADepth:Integer = 30);
+  begin
+    if ADepth <= 0 then
+      stop := true
+    else
+    if (Abs(p1.X - p2.X) < 2) and (Abs(p1.Y - p2.Y) < 2) then
+    else
+    begin
+      var midPt2 := p1.toPointF.MidArcPt(p2.toPointF, center).Round;
+      if (midPt2 = p1) or (midPt2 = p2) then
+        midPt2 := p1.toPointF.MidLinePt(p2.toPointF).Truncate;
+      BridgeArc(p1, center, midPt2, AList, ADepth - 1);
+      var lastadded2 := AList.Last;
+      AList.Add(midPt2);
+      insidePt := insidePt + midPt2;
+      Inc(insidePtCount);
+      BridgeArc(midPt2, center, p2, AList, ADepth - 1);
+    end;
+  end;
+
+begin
+  stop := False;
+  result := false;
+  var len := Item.Length;
+  var currLen := 0.0;
+  var positionIndex := -1;
+
+  // find position index
+  for var i := 1 to Item.Count-1 do
+  begin
+    currLen := currLen + Item[i-1].Distance(Item[i]);
+    if currLen > len * APosition then
+    begin
+      positionIndex := i;
+      break
+    end;
+  end;
+
+  if positionIndex = -1 then
+    exit;
+
+  // start building perimeter
+  perimeter := TList<TPoint>.create;
+  try
+    // add first pt
+    perimeter.Add(Item[positionIndex]);
+    var beginIndex := -1;
+
+    // add first diameter half along side
+    var j := positionIndex+1;
+    while j < Item.Count do
+    begin
+      var last := perimeter.Last;
+      var next := Item[j];
+      BridgeSide(last, Item[j], perimeter);
+
+      perimeter.Add(Item[j]);
+
+      if Item[positionIndex].Distance(Item[j]) > ARadius then
+      begin
+        beginIndex := j;
+        break
+      end;
+
+      Inc(j);
+    end;
+
+    if beginIndex = -1 then
+      exit;
+
+    var endIndex := -1;
+    j := positionIndex-1;
+    var lastDiamHalf := TList<TPoint>.create(Item[j]);
+    Dec(j);
+    while j >= 0 do
+    begin
+      var last := perimeter.Last;
+      var next := Item[j];
+      BridgeSide(lastDiamHalf.Last, Item[j], lastDiamHalf);
+
+      lastDiamHalf.Add(Item[j]);
+
+      if Item[positionIndex].Distance(Item[j]) > ARadius then
+      begin
+        endIndex := j;
+        break
+      end;
+
+      dec(j);
+    end;
+
+    if endIndex = -1 then
+      exit;
+
+    insidePt := Point(0, 0);
+    insidePtCount := 0;
+    var arc1 := perimeter.Last;
+    var arc2 := lastDiamHalf.Last;
+    var ctr := Item[positionIndex];
+    // add arc
+    BridgeArc(arc1, ctr, arc2, perimeter);
+    if stop then
+      Exit;
+
+    perimeter.AddRange(lastDiamHalf.toReverseArray);
+    APatch.perimeterPts := perimeter.ToArray;
+    APatch.insidePt := (insidePt.toPointF / insidePtCount).Round;
+
+    result := true;
+
+  finally
+    perimeter.free
+  end
+end;
+
+function TArrSide.CreatePatches(const APositions: array of Single; ARadius:Single;
+  out APatches: TArray<TPatch>): boolean;
+begin
+  result := false;
+  setlength(APatches, Length(APositions));
+  for var i := 0 to length(APositions)-1 do
+  begin
+    var APatch:TPatch;
+    if CreatePatch(APositions[i], ARadius, APatch) then
+      APatches[i] := APatch
+    else
+      exit;
+  end;
+  result := true
+end;
+
+function TArrSide.ScorePatches(const APositions:array of Single; ARadius:single; out AScores:TArray<TAlphaColor>):boolean;
+begin
+  result := false;
+  var APatches:TArray<TPatch>;
+  if CreatePatches(APositions, ARadius, APatches) then
+    result := ScorePatches(APatches, AScores)
+end;
+
+function TArrSide.ScorePatch(APosition, ARadius: single;
+  out AScore: TAlphaColor): boolean;
+begin
+  result := false;
+  var APatch:TPatch;
+  if CreatePatch(APosition, ARadius, APatch) then
+    result := ScorePatch(APatch, AScore)
+end;
+
+function TArrSide.ScorePatch(APatch: TPatch; out AScore: TAlphaColor): boolean;
+var
+  rslt:TAlphaColorF;
+  clrCnt:integer;
+  Data:TBitmapData;
+  perimeterDict:TDictionary<TPoint, Boolean>;
+
+  procedure WalkPatch(APt:TPoint);
+  begin
+    var clr := Data.GetPixel(APt.X, APt.Y);
+    if clr = 0 then
+      exit;
+    if perimeterDict.ContainsKey(APt) then
+      exit;
+    rslt := rslt + TAlphaColorF.Create(clr);
+    Inc(clrCnt);
+
+    perimeterDict.Add(APt, false);
+    WalkPatch(APt + Point(0, -1));
+    WalkPatch(APt + Point(-1, 0));
+    WalkPatch(APt + Point(0, 1));
+    WalkPatch(APt + Point(1, 0))
+  end;
+
+begin
+  result := false;
+  var Bitmap := Piece.GetBitmap.Clone;
+  perimeterDict := TDictionary<TPoint, Boolean>.Create;
+
+  var dupe := false;
+  for var i := 0 to Length(APatch.perimeterPts)-1 do
+    if perimeterDict.ContainsKey(APatch.perimeterPts[i]) then
+      dupe := true
+    else
+      perimeterDict.Add(APatch.perimeterPts[i], false);
+
+  rslt := TAlphaColorF.Create(0);
+  clrCnt := 0;
+
+  if Bitmap.Map(TMapAccess.ReadWrite, Data) then
+  try
+    WalkPatch(APatch.insidePt);
+    AScore := TAlphaColorF.create(rslt.R/clrCnt, rslt.G/clrCnt, rslt.B/clrCnt).ToAlphaColor;
+    result := true
+  finally
+    perimeterDict.free;
+    Bitmap.Unmap(Data);
+    Bitmap.free
+  end;
+end;
+
+function TArrSide.ScoreMatch(AScore: TArray<TAlphaColor>; ASide: TArrSide;
+  const APositions: array of Single; ARadius: single;
+  out AMatchScore: TArray<single>): boolean;
+begin
+  result := false;
+  setlength(AMatchScore, 0);
+  var cnt := Length(APositions);
+  var AScores2:TArray<TAlphaColor>;
+  if ASide.ScorePatches(APositions, ARadius, AScores2) then
+  begin
+    result := True;
+    setlength(AMatchScore, cnt);
+    for var i := 0 to cnt-1 do
+      if (AScore[i] <> 0) and (AScores2[cnt-1-i] <> 0) then
+        AMatchScore[i] := AScore[i].ScoreDiff(AScores2[cnt-1-i])
+  end;
 end;
 
 { TArrPiece }
@@ -1739,29 +2120,36 @@ constructor TArrPiece.Create(ACollection: TArrCollection; APieceIndex: integer;
   AItem: TScanPiece);
 begin
   inherited Create(ACollection, AItem);
+  fTopSideIndex := -1;
   fSides := TList<TArrSide>.create;
   fPieceIndex := APieceIndex;
+  fPieceCenter := PointF(0, 0);
 
   var borderCount := 0;
   for var i := 0 to fItem.Sides.Count-1 do
   begin
+    fPieceCenter := fPieceCenter + fItem.Sides[i].First;
     var nextIndex := (i + 1) mod fItem.Sides.Count;
     var prevIndex := (i + fItem.Sides.Count-1) mod fItem.Sides.Count;
-    if fItem.Sides[i].Slices.Count = 1 then
-      inc(borderCount)
-    else
-    begin
-      var side := TArrSide.Create(ACollection, self, i, fItem.Sides[i]);
-      side.fArrSideIndex := fSides.Count;
-      if fItem.Sides[nextIndex].Slices.Count = 1 then
-        side.fIsBeforeBorder := true;
-
-      if fItem.Sides[prevIndex].Slices.Count = 1 then
-        side.fIsAfterBorder := True;
-      fSides.Add(side)
-    end;
+    // TODO : replace slices
+//    if fItem.Sides[i]. //.Slices.Count = 1 then
+//      inc(borderCount)
+//    else
+//    begin
+//      var side := TArrSide.Create(ACollection, self, i, fItem.Sides[i]);
+//      if side.HypPoint then
+//
+//      side.fArrSideIndex := fSides.Count;
+//      if fItem.Sides[nextIndex].Slices.Count = 1 then
+//        side.fIsBeforeBorder := true;
+//
+//      if fItem.Sides[prevIndex].Slices.Count = 1 then
+//        side.fIsAfterBorder := True;
+//      fSides.Add(side)
+//    end;
   end;
 
+  fPieceCenter := fPieceCenter / fItem.Sides.Count;
   fIsCorner := borderCount = 2;
   fIsBorder := borderCount = 1
 end;
@@ -1770,6 +2158,11 @@ destructor TArrPiece.Destroy;
 begin
   fSides.free;
   inherited;
+end;
+
+function TArrPiece.GetBitmap: TBitmap;
+begin
+  result := Collection.Scan.GetPieceBitmap(fPieceIndex)
 end;
 
 function TArrPiece.SidesLinked: integer;
@@ -1793,6 +2186,8 @@ begin
   fPieces := TList<TArrPiece>.create;
   fCorners := TList<TArrPiece>.create;
   fBorders := TList<TArrPiece>.Create;
+  fGrid := TDictionary<TPoint, TArrPiece>.create;
+  fGridPiece := TDictionary<TArrPiece,TPoint>.create;
 
   for var i := 0 to fScan.Count-1 do
   begin
@@ -1812,6 +2207,8 @@ end;
 
 destructor TArrCollection.Destroy;
 begin
+  fGrid.free;
+  fGridPiece.free;
   fLinks.Free;
   fSides.free;
   fPieces.Free;
@@ -1845,10 +2242,95 @@ begin
   inherited create;
   fSide1 := ASide1;
   fSide2 := ASide2;
-  fSide1.fLink := self;
-  fSide2.fLink := Self;
-  fSide1.Collection.fLinks.Add(fSide1, self);
-  fSide2.Collection.fLinks.Add(fSide2, Self);
+  if fSide1.fLink <> nil then
+    raise Exception.Create('Unexpected');
+
+  if fSide2.fLink <> nil then
+    raise Exception.Create('Unexpected');
+
+  try
+    fSide1.fLink := self;
+    fSide2.fLink := Self;
+    fSide1.Collection.fLinks.Add(fSide1, self);
+    fSide2.Collection.fLinks.Add(fSide2, Self);
+
+    if ASide1.Collection.fGrid.Count = 0 then
+    begin
+      ASide1.Collection.fGrid.Add(ASide1.Piece.fGridPos, ASide1.Piece);
+      ASide1.Collection.fGridPiece.Add(ASide1.Piece, ASide1.Piece.fGridPos);
+      SetLength(ASide1.Piece.fGridSides, 4);
+      ASide1.Piece.fTopSideIndex := ASide1.fSideIndex;
+      for var ts1 := 0 to ASide1.Piece.Sides.Count-1 do
+      begin
+        var fromIndex := ASide1.Piece.Sides[ts1].fSideIndex;
+        var toIndex := (ASide1.Piece.Sides[ts1].fSideIndex - ASide1.Piece.fTopSideIndex + 4) mod 4;
+        ASide1.Piece.fGridSides[toIndex] := ASide1.Piece.Sides[ts1];
+      end;
+    end;
+
+    fSide1FromTopIndex := (ASide1.fSideIndex - ASide1.Piece.fTopSideIndex + 4) mod 4;
+
+    case fSide1FromTopIndex of
+      0: fGridMove1 := Point(0, -1);
+      1: fGridMove1 := Point(1, 0);
+      2: fGridMove1 := Point(0, 1);
+      3: fGridMove1 := Point(-1, 0);
+      else
+        raise Exception.Create('Unexpected');
+    end;
+
+    var ASide2GridPoint := ASide1.Piece.fGridPos + fGridMove1;
+    if ASide2.Piece.fTopSideIndex = -1 then
+    begin
+      ASide2.Piece.fTopSideIndex := (ASide2.fSideIndex + 6 - fSide1FromTopIndex) mod 4;
+      ASide2.Piece.fGridPos := ASide2GridPoint;
+      ASide2.Collection.fGrid.Add(ASide2.Piece.fGridPos, ASide2.Piece);
+      ASide2.Collection.fGridPiece.Add(ASide2.Piece, ASide2.Piece.fGridPos);
+      SetLength(ASide2.Piece.fGridSides, 4);
+      for var ts2 := 0 to ASide2.Piece.Sides.Count-1 do
+      begin
+        var fromIndex2 := ASide2.Piece.Sides[ts2].fSideIndex;
+        var toIndex2 := (ASide2.Piece.Sides[ts2].fSideIndex - ASide2.Piece.fTopSideIndex + 4) mod 4;
+        ASide2.Piece.fGridSides[toIndex2] := ASide2.Piece.Sides[ts2];
+      end;
+    end
+    else
+    if (ASide2.Piece.fGridPos <> ASide2GridPoint) then
+      raise Exception.Create('Unexpected');
+
+    fSide2FromTopIndex := (ASide2.fSideIndex - ASide2.Piece.fTopSideIndex + 4) mod 4;
+    case fSide2FromTopIndex of
+      0: fGridMove2 := Point(0, -1);
+      1: fGridMove2 := Point(1, 0);
+      2: fGridMove2 := Point(0, 1);
+      3: fGridMove2 := Point(-1, 0);
+      else
+        raise Exception.Create('Unexpected');
+    end;
+
+  except
+    fSide1.fLink := nil;
+    fSide2.fLink := nil;
+    fSide1.Collection.fLinks.Remove(fSide1);
+    fSide2.Collection.fLinks.Remove(fSide2);
+    raise
+  end;
+
+  var found:TArrPiece;
+  var mvTest := [Point(0, -1), Point(1, 0), Point(0, 1), Point(-1, 0)];
+  for var mvTestIndex := 0 to 3 do
+  if (mvTestIndex <> fSide2FromTopIndex) and (ASide2.Piece.GridSides[mvTestIndex] <> nil) and (ASide2.Piece.GridSides[mvTestIndex].Link = nil) then
+  begin
+    var newSide1 := ASide2.Piece.GridSides[mvTestIndex];
+    if ASide2.Collection.GridPos.TryGetValue(ASide2.Piece.GridPos + mvTest[mvTestIndex], found) then
+    try
+      var newSide2 := found.GridSides[(mvTestIndex + 2) mod 4];
+      if (newSide2 <> nil) and (newSide2.Link = nil) then
+        newSide1.AddLink(newSide2);
+    except
+
+    end
+  end
 end;
 
 function TArrLink.OtherSide(ASide: TArrSide): TArrSide;
@@ -1868,10 +2350,10 @@ begin
   begin
     var sideIndex := (ASide.ArrSideIndex + i) mod ASide.Piece.Sides.Count;
     var boundary:TRectF;
-    rotatedSide[i] := ASide.Piece.Sides[sideIndex].Item.RotateByRadian(rotationAngle, ASide.Center, boundary, AScale);
-    rotatedCenter[i] := ASide.Piece.Sides[sideIndex].Center.RotateByRadian(rotationAngle, ASide.Center, AScale);
+    rotatedSide[i] := ASide.Piece.Sides[sideIndex].Item.RotateByRadian(rotationAngle, ASide.SideCenter, boundary, AScale);
+    rotatedCenter[i] := ASide.Piece.Sides[sideIndex].SideCenter.RotateByRadian(rotationAngle, ASide.SideCenter, AScale);
   end;
-  rotatedPiece := ASide.Piece.Item.Points.RotateByRadian(rotationAngle, ASide.Center, rotatedPieceBoundary, AScale)
+  rotatedPiece := ASide.Piece.Item.Points.RotateByRadian(rotationAngle, ASide.SideCenter, rotatedPieceBoundary, AScale)
 //  leftMargin := rotatedSide[0].X - rotatedBoundary.Left;
 //  rightMargin := rotatedBoundary.Right - rotatedSide[Length(rotatedSide)-1].X;
 //  centerWidth := rotatedSide[0].Distance(rotatedSide[Length(rotatedSide)-1]);
@@ -1881,6 +2363,31 @@ constructor TRotatedSide.Create(ASide: TArrSide; ADirection: byte; AScale:Single
 begin
   direction := ADirection;
   Create(ASide, DegToRad(DirectionAngles[ADirection]), AScale)
+end;
+
+  { TPatchScoreArrayHelper }
+
+//function TPatchScoreArrayHelper.ToSingleScore:TArray<Single>;
+//begin
+////  SetLength(result, length(self.
+//end;
+
+{ TAlphaColorHelper }
+
+//function TAlphaColorHelper.Diff(AColor: TAlphaColorF): TAlphaColorF;
+//begin
+//  Result.R := Abs(R - AColor.R);
+//  Result.G := Abs(G - AColor.G);
+//  Result.B := Abs(B - AColor.B);
+//  Result.A := Abs(A - AColor.A);
+//end;
+
+{ TAlphaColorHelper }
+
+function TAlphaColorHelper.ScoreDiff(AColor:TAlphaColor):Single;
+begin
+  var diff := TAlphaColorF.Create(self) - TAlphaColorF.Create(AColor);
+  result := 1 - (abs(diff.R) + abs(diff.G) + abs(diff.b))/3
 end;
 
 end.

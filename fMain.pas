@@ -312,7 +312,7 @@ begin
 //      var origs := fScan.Pieces.Keys.ToArray;
       for var i := 0 to fScan.Count-1 do
       begin
-        var poly := fScan.Pieces[i].Points.asPolygon;
+        var poly := fScan.Pieces[i].Points.ToArray.AsPointFs.asPolygon;
         var orig:TPointF := fScan.PieceOrigin[i];
         for var j := Low(poly) to High(poly) do
           poly[j] := fraBitmapViewerImport.imgBitmap.toControlPoint(poly[j], orig);

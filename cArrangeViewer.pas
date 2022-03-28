@@ -26,6 +26,9 @@ type
     tlbArrange: TToolBar;
     btnNext: TSpeedButton;
     btnMatch: TSpeedButton;
+    lblScore: TLabel;
+    btnPrev: TSpeedButton;
+    btnSkip: TSpeedButton;
     procedure lstPiecesDblClick(Sender: TObject);
     procedure lbiCorner1Paint(Sender: TObject; Canvas: TCanvas;
       const ARect: TRectF);
@@ -44,16 +47,19 @@ type
     fArrOverlay:TBitmap;
     fCurrSide:TArrSide;
     fMatchSide:TArrSide;
+    fMatchSides:TArray<TArrSide>;
+    fMatchSidesIndex:integer;
     fTranslationX, fTranslationY:single;
     fArrangementAngle:single;
     fArrScale:single;
-    fLastArrBound, fArrBound:TRectF;
+    fSkipTargetCount:integer;
+//    fLastArrBound, fArrBound:TRectF;
   public
     { Public declarations }
 
     procedure Start(AScan:TScanCollection); override;
-    procedure LoadNextCompatibleSide;
-    procedure LoadNextTargetSide;
+    procedure LoadNextCompatibleSide(inc:integer=1);
+    procedure LoadNextTargetSide(ASkipCount:integer);
   end;
 
 var
@@ -70,6 +76,7 @@ uses
   , m3.framehelper.fmx
   , m3.pointhelper
   , m3.consolelog
+  , m3.bitmaphelper.fmx
 //  , m3.DebugForm
   ;
 
@@ -77,18 +84,30 @@ uses
 
 procedure TfraArrangeViewer.btnMatchClick(Sender: TObject);
 begin
-  fCurrSide.AddLink(fMatchSide);
-  fMatchSide := nil;
+  if sender = btnMatch then
+  begin
+    fCurrSide.AddLink(fMatchSide);
+    fMatchSide := nil;
+    LoadNextTargetSide(0);
+  end
+  else
+  begin
+    fMatchSide := nil;
+    LoadNextTargetSide(1);
+  end;
   fraBitmapViewer.imgBitmap.Repaint;
-  LoadNextTargetSide;
-  fArrBound := fLastArrBound;
+//  fArrBound := fLastArrBound;
   pbArrange.Repaint
 end;
 
 procedure TfraArrangeViewer.btnNextClick(Sender: TObject);
 begin
-  LoadNextCompatibleSide;
-  fArrBound := fLastArrBound;
+  if sender = btnNext then
+    LoadNextCompatibleSide(1)
+  else
+    LoadNextCompatibleSide(-1);
+
+//  fArrBound := fLastArrBound;
   pbArrange.Repaint
 end;
 
@@ -101,12 +120,13 @@ end;
 procedure TfraArrangeViewer.fraBitmapViewerimgBitmapPaint(Sender: TObject;
   Canvas: TCanvas; const ARect: TRectF);
 var
-  APaintedPieces : TList<TArrPiece>;
+  APaintedPieces : TDictionary<TArrPiece,TMatrix>;
   AArrBound : TRectF;
+  canvasM : TMatrix;
 
-  procedure WalkArrangement(AAngle:Single; ASide:TArrSide);//; APaintSide: TFunc<Single, TArrSide, Boolean>);
+  procedure WalkArrangement(ATrans:TMatrix; AAngle:extended; ASide:TArrSide);//; APaintSide: TFunc<Single, TArrSide, Boolean>);
   begin
-    if not APaintedPieces.Contains(ASide.Piece) then
+    if not APaintedPieces.ContainsKey(ASide.Piece) then
 //    with
 //      TLog.Instance.ScopeLog([leInfo], 'Walk Piece %d starting %d angle %.2f toward %.2f',[ASide.Piece.PieceIndex, ASide.ArrSideIndex, RadToDeg(ASide.Angle), RadToDeg(AAngle)])
 //    do
@@ -115,12 +135,19 @@ var
 //      Canvas.Stroke.Color := TAlphaColorRec.Red;
 //      Canvas.Draw([PointF(5, 0), PointF(0, 5), PointF(-5, 0), PointF(5, 0)]);
 
-      var currM := Canvas.Matrix;
-      var rotateToAngle := TRotatedSide.Create(ASide, AAngle, fArrScale);
+//      var currM := Canvas.Matrix;
+      var rotateToAngle := TRotatedSide.Create(ASide, AAngle, 1);
       var newM:TMatrix;
       with rotateToAngle.rotatedCenter[0] * -1 do
         newm := TMatrix.CreateTranslation(X , Y);
+      var rotAngelInDeg := RadToDeg(rotateToAngle.rotationAngle);
+      rotateToAngle.rotationAngle := rotateToAngle.rotationAngle * (pi * 16);
+      rotateToAngle.rotationAngle := round(rotateToAngle.rotationAngle);
+      rotateToAngle.rotationAngle := rotateToAngle.rotationAngle / (pi * 16);
+      var rotAngelInDeg2 := RadToDeg(rotateToAngle.rotationAngle);
       newM := newM * TMatrix.CreateRotation(rotateToAngle.rotationAngle);
+
+      newM := newM * ATrans;
 
       if newM.m31 < AArrBound.Left then
         AArrBound.Left := newM.m31;
@@ -134,26 +161,29 @@ var
       if newM.m32 > AArrBound.Bottom then
         AArrBound.Bottom := newM.m32;
 
-      newM := newM * currM;
+//      newM := newM * canvasM;
 
       for var i := 0 to ASide.Piece.Sides.Count-1 do
       begin
-        Canvas.SetMatrix(newM);
         var sideIndex := (ASide.ArrSideIndex+i) mod ASide.Piece.Sides.Count;
         var currSide := ASide.Piece.Sides[sideIndex];
-//        TLog.Instance.Log([leInfo], 'Draw Side %d angle %.2f',[sideIndex, RadToDeg(currSide.Angle)]);
+//        Canvas.SetMatrix(newM);
 
         if i = 0 then
         begin
-          var ABitmap := currSide.Piece.Collection.Scan.GetPieceBitmap(currSide.Piece.PieceIndex);
-          Canvas.DrawBitmap(ABitmap, ABitmap.BoundsF, ABitmap.BoundsF * fArrScale, 0.8);
-          APaintedPieces.Add(currSide.Piece);
-          Canvas.FillText(ABitmap.BoundsF * fArrScale, currSide.Piece.PieceIndex.ToString, false, 1, [], TTextAlign.Center, TTextAlign.Center)
+          APaintedPieces.Add(currSide.Piece, newM);
+//          if AArrBound = RectF(0, 0, 0, 0) then
+//            AArrBound := rotateToAngle.rotatedPieceBoundary + PointF(newM.m31, newM.m32)
+//          else
+//            AArrBound := AArrBound + (rotateToAngle.rotatedPieceBoundary + PointF(newM.m31, newM.m32));
+//          var ABitmap := currSide.Piece.Collection.Scan.GetPieceBitmap(currSide.Piece.PieceIndex);
+//          Canvas.DrawBitmap(ABitmap, ABitmap.BoundsF, ABitmap.BoundsF * fArrScale, 0.8);
+//          Canvas.FillText(ABitmap.BoundsF * fArrScale, currSide.Piece.PieceIndex.ToString, false, 1, [], TTextAlign.Center, TTextAlign.Center)
         end;
 
         if (currSide.Link <> nil) then
         begin
-          Canvas.Draw(currSide.Item, fArrScale);
+//          Canvas.Draw(currSide.Item, fArrScale);
 //          Canvas.Stroke.Color := TAlphaColorRec.Green;
 //          Canvas.Draw(ScalePoints([PointF(5, 0), PointF(0, 5), PointF(-5, 0), PointF(5, 0)], fArrScale));
 
@@ -161,16 +191,11 @@ var
           var flipSide := currSide.Link.OtherSide(currSide);
 
           with rotateToAngle, rotatedCenter[i] - rotatedCenter[0] do
-          begin
             sideTrans := TMatrix.CreateTranslation(X, Y);
-//            TLog.Instance.Log([leInfo], 'Side Trans %.2f,%.2f',[X, y])
-          end;
 
-          var flipM := currM * sideTrans;
-          Canvas.SetMatrix(flipM);
-          var flipAngle := AAngle + (-ASide.Angle+currSide.Angle) + DegToRad(180);
-//          var flipDeg := RadToDeg(flipAngle);
-          WalkArrangement(flipAngle, flipSide);
+          var flipM := ATrans * sideTrans;
+          var flipAngle := AAngle + (-ASide.Angle+currSide.Angle) + Pi;
+          WalkArrangement(flipM, flipAngle, flipSide);
         end;
       end;
     end;
@@ -181,25 +206,89 @@ begin
   try
     Canvas.BeginScene;
     var sv := Canvas.SaveState;
-    if fArrCollection.Links.Count > 0 then
+    if (fArrCollection <> nil) and (fArrCollection.Links.Count > 0) then
     try
-      Canvas.Clear(0);
-
       var fSide := fArrCollection.Links.Keys.ToArray[0];
       AArrBound := RectF(0, 0, 0, 0);
-      APaintedPieces := TList<TArrPiece>.create;
+      APaintedPieces := TDictionary<TArrPiece,TMatrix>.create;
 
+      WalkArrangement(TMatrix.Identity, fArrangementAngle, fSide);
+
+      // calc center
       var center := ARect.CenterPoint;
-      var oldM := Canvas.Matrix;
-      if fLastArrBound <> AArrBound then
-        center := ARect.CenterPoint - fLastArrBound.CenterPoint / 2;
+      canvasM := Canvas.Matrix;
+      AArrBound := AArrBound * fArrScale;
+      var ACenteredArrBound := AArrBound.CenterAt(ARect);
 
-      with center do
-        oldM := oldM * TMatrix.CreateTranslation(X, Y);
-      Canvas.SetMatrix(oldM);
+      // calc Translation
+      var transM, transM2:TMatrix;
+      with ACenteredArrBound do
+        transM := TMatrix.CreateTranslation(left, top);
 
-      WalkArrangement(fArrangementAngle, fSide);
-      fLastArrBound := AArrBound;
+      // calc Scale
+      var scaleM := TMatrix.CreateScaling(fArrScale, fArrScale);
+
+      Canvas.Clear(0);
+      Canvas.Fill.Color := TAlphaColorRec.White;
+//      Canvas.SetMatrix(transM * canvasM);
+//      Canvas.Stroke.Color := TAlphaColorRec.Red;
+//      Canvas.DrawRect(RectF(0, 0, AArrBound.Width-1, AArrBound.Height-1), 1);
+
+      with ACenteredArrBound do
+        transM2 := TMatrix.CreateTranslation(-AArrBound.Left + left,-AArrBound.Top + top);
+
+      for var kv in APaintedPieces do
+      begin
+        Canvas.SetMatrix(kv.Value * scaleM * transM2 * canvasM);
+        var ABitmap := kv.Key.Collection.Scan.GetPieceBitmap(kv.Key.PieceIndex);
+        Canvas.DrawBitmap(ABitmap, ABitmap.BoundsF, ABitmap.BoundsF * 1, 1);
+        var pieceText := format('%d',[kv.Key.PieceIndex]);
+        if kv.Key.TopSideIndex > -1 then
+          pieceText := Format('%s'#13#10'%d,%d',[pieceText, kv.Key.GridPos.x, kv.Key.GridPos.Y]);
+        Canvas.FillText(kv.Key.PieceCenter.Inflate(30) * 1, pieceText, false, 1, [], TTextAlign.Center, TTextAlign.Center);
+//        for var sd := 0 to 3 do
+//        begin
+//          var side := kv.Key.GridSides[sd];
+//          if side <> nil then
+//          begin
+//            var sideText := Format('%d',[sd]);
+//            var sideCenter := (side.SideCenter - side.Piece.PieceCenter) * 0.8 + side.Piece.PieceCenter;
+//            if side.Link <> nil then
+//              Canvas.Fill.Color := TAlphaColorRec.Aqua;
+//            Canvas.FillText(sideCenter.Inflate(10), sideText, False, 1, [], TTextAlign.Center, TTextAlign.Center);
+//            Canvas.Fill.Color := TAlphaColorRec.White;
+//          end
+//        end
+      end;
+
+      for var kv in APaintedPieces do
+      begin
+        Canvas.SetMatrix(kv.Value * scaleM * transM2 * canvasM);
+//        var ABitmap := kv.Key.Collection.Scan.GetPieceBitmap(kv.Key.PieceIndex);
+//        Canvas.DrawBitmap(ABitmap, ABitmap.BoundsF, ABitmap.BoundsF * 1, 1);
+//        var pieceText := format('%d',[kv.Key.PieceIndex]);
+//        if kv.Key.TopSideIndex > -1 then
+//          pieceText := Format('%s'#13#10'%d,%d',[pieceText, kv.Key.GridPos.x, kv.Key.GridPos.Y]);
+//        Canvas.FillText(kv.Key.PieceCenter.Inflate(30) * 1, pieceText, false, 1, [], TTextAlign.Center, TTextAlign.Center);
+        for var sd := 0 to 3 do
+        begin
+          var side := kv.Key.GridSides[sd];
+          if side <> nil then
+          begin
+            var sideText := Format('%d',[sd]);
+            var sideCenter := (side.SideCenter - side.Piece.PieceCenter) * 0.8 + side.Piece.PieceCenter;
+            if side.Link <> nil then
+              Canvas.Fill.Color := TAlphaColorRec.Aqua;
+            Canvas.FillText(sideCenter.Inflate(10), sideText, False, 1, [], TTextAlign.Center, TTextAlign.Center);
+            Canvas.Fill.Color := TAlphaColorRec.White;
+          end
+        end
+      end;
+
+      Canvas.SetMatrix(transM * canvasM);
+      Canvas.Stroke.Color := TAlphaColorRec.Red;
+      Canvas.DrawRect(RectF(0, 0, AArrBound.Width-1, AArrBound.Height-1), 1);
+
     finally
       Canvas.RestoreState(sv);
       Canvas.EndScene;
@@ -240,47 +329,26 @@ end;
 
 procedure TfraArrangeViewer.LoadNextCompatibleSide;
 begin
-  var score:single;
-
-  if fMatchSide = nil then
+  if fCurrSide <> nil then
   begin
-    fMatchSide := fCurrSide.Piece.Collection.AllPieces.First.Sides.First;
-    if fCurrSide.ScoreMatch(fMatchSide, score) then
+    if (fMatchSide = nil) and (fCurrSide <> nil) then
     begin
-      pbArrange.Repaint;
-      exit
+      fMatchSides := fCurrSide.MatchingSides([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 10);
+      fMatchSidesIndex := 0
     end
-  end;
+    else
+      fMatchSidesIndex := (fMatchSidesIndex + Length(fMatchSides) + inc) mod Length(fMatchSides);
 
-  var nextSidePiece := fMatchSide.Piece;
-  var nextSideIndex := fMatchSide.Piece.Sides.IndexOf(fMatchSide);
-  var nextPieceIndex := fMatchSide.Piece.Collection.AllPieces.IndexOf(nextSidePiece);
-  var nextSide := fMatchSide;
-  fMatchSide := nil;
-//  for var i := 0 to fCurrSide.Piece.Collection.AllPieces.Count-1 do
-//  begin
-  repeat
-    nextSideIndex := (nextSideIndex + 1) mod nextSide.Piece.Sides.Count;
-    if nextSideIndex = 0 then
-    begin
-      nextPieceIndex := (nextPieceIndex + 1) mod nextSidePiece.Collection.AllPieces.Count;
-      nextSidePiece := nextSidePiece.Collection.AllPieces[nextPieceIndex];
-    end;
-    nextSide := nextSidePiece.Sides[nextSideIndex];
-
-    if fCurrSide.ScoreMatch(nextSide, score) then
-    begin
-      fMatchSide := nextSide;
-      pbArrange.Repaint;
-      break
-    end
-  until false
+    if length(fMatchSides) > 0 then
+      fMatchSide := fMatchSides[fMatchSidesIndex]
+  end
 end;
 
 procedure TfraArrangeViewer.LoadNextTargetSide;
 var
   alreadySearched:TList<TArrPiece>;
   foundSide:TArrSide;
+  skipCount:integer;
 
   function FindUnmatchedSideInArrangement(APiece:TArrPiece):boolean;
   begin
@@ -292,13 +360,17 @@ var
       for var i := 0 to APiece.Sides.Count-1 do
       begin
         var testSide := APiece.Sides[i];
-        if not (testSide.IsAfterBorder or testSide.IsBeforeBorder) then
-          Continue;
+//        if not (testSide.IsAfterBorder or testSide.IsBeforeBorder) then
+//          Continue;
         if (testSide.Link = nil) then
         begin
-          foundSide := testSide;
-          result := true;
-          exit
+          if skipCount = 0 then
+          begin
+            foundSide := testSide;
+            result := true;
+            exit
+          end;
+          Dec(skipCount)
         end
         else
         if FindUnmatchedSideInArrangement(testSide.Link.OtherSide(testSide).Piece) then
@@ -307,6 +379,24 @@ var
           break
         end
       end;
+//      for var i := 0 to APiece.Sides.Count-1 do
+//      begin
+//        var testSide := APiece.Sides[i];
+////        if not (testSide.IsAfterBorder or testSide.IsBeforeBorder) then
+////          Continue;
+//        if (testSide.Link = nil) then
+//        begin
+//          foundSide := testSide;
+//          result := true;
+//          exit
+//        end
+//        else
+//        if FindUnmatchedSideInArrangement(testSide.Link.OtherSide(testSide).Piece) then
+//        begin
+//          result := true;
+//          break
+//        end
+//      end;
     end;
   end;
 
@@ -317,7 +407,15 @@ begin
     if fArrCollection.Links.Count = 0 then
       found := FindUnmatchedSideInArrangement(fCurrSide.Piece)
     else
-      found := FindUnmatchedSideInArrangement(fArrCollection.Links.Keys.ToArray[0].Piece);
+    begin
+      var links := fArrCollection.Links.Keys.ToArray;
+//      if ASkipCount = 0 then
+//        fSkipTargetCount := 0
+//      else
+        Inc(fSkipTargetCount, ASkipCount);
+      skipCount := fSkipTargetCount mod length(links);
+      found := FindUnmatchedSideInArrangement(links[0].Piece);
+    end;
     if found then
     begin
       fCurrSide := foundSide;
@@ -392,10 +490,12 @@ begin
       var fit2 := mergedBounds.FitInto(canvasBound2, scale2);
 
       scale := Min(1/scale1, 1/scale2);
+//      var patchSet := TList<T
 
       var drawSide := procedure(ASide:TArrSide; canvasBound:TRectF; fitBounds:TRectF; rotatedSide:TRotatedSide; opacity:single)
         begin
-          var bmp := ASide.Collection.Scan.GetPieceBitmap(ASide.Piece.PieceIndex);
+          var bmpOrig := ASide.Collection.Scan.GetPieceBitmap(ASide.Piece.PieceIndex);
+          var bmp := bmpOrig.Clone;
           var sv := canvas.SaveState;
           var oldMatrix := canvas.Matrix;
           try
@@ -411,7 +511,7 @@ begin
 
             // set up transformation
             var newMatrix := oldMatrix;
-            with ASide.Center * scale do
+            with ASide.SideCenter * scale do
               newMatrix := TMatrix.CreateTranslation(-X, -Y);
             newMatrix := newMatrix * TMatrix.CreateRotation(rotatedSide.rotationAngle);
             newMatrix := newMatrix * TMatrix.CreateTranslation(oldMatrix.M[2].X, oldMatrix.M[2].Y);
@@ -422,7 +522,17 @@ begin
 //            canvas.Stroke.Color := TAlphaColorRec.Green;
 //            canvas.DrawRect(pieceRect, 1);
             canvas.DrawBitmap(bmp, bmpRect, pieceRect, opacity);
-            Canvas.FillText(pieceRect, ASide.Piece.PieceIndex.ToString, false, 1, [], TTextAlign.Center, TTextAlign.Center);
+            var pieceText := format('%d',[ASide.Piece.PieceIndex]);
+            if ASide.Piece.TopSideIndex > -1 then
+              pieceText := Format('%s'#13#10'%d,%d',[pieceText, ASide.Piece.GridPos.x, ASide.Piece.GridPos.Y]);
+            Canvas.FillText(pieceRect, pieceText, false, 1, [], TTextAlign.Center, TTextAlign.Center);
+
+            // draw patches
+            canvas.Stroke.Color := TAlphaColorRec.White;
+            var APatches:TArray<TPatch>;
+            if ASide.CreatePatches([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 10, APatches) then
+              for var pos := 0 to length(APatches)-1 do
+                Canvas.DrawPolygon(APatches[Pos].perimeterPts.AsPointFs.Scale(scale).AsPolygon, 0.5);
 
             // draw side
 //            Canvas.Draw(ASide.Item, scale);
@@ -438,17 +548,37 @@ begin
 //            canvas.Stroke.Color := TAlphaColorRec.Red;
 //            Canvas.DrawEllipse((ASide.Center * scale).Inflate(5, 10), 1);
           finally
+            bmp.Free;
             canvas.RestoreState(sv)
           end;
         end;
 
       drawSide(fCurrSide, canvasBound2, fit2, rotatedSide2, 1);
+      lblScore.Text := 'n/a';
 
       if fMatchSide <> nil then
       begin
         var rotatedSide1 := TRotatedSide.Create(fMatchSide, 0);
-        drawSide(fMatchSide, canvasBound1, fit1, rotatedSide1, 1)
+        drawSide(fMatchSide, canvasBound1, fit1, rotatedSide1, 1);
+        var scores:TArray<Single>;
+        if fCurrSide.ScoreMatch(fMatchSide, [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9], 10, scores) then
+        try
+//          lblScore.BeginUpdate;
+          var score := format('[%d/%d] ',[fMatchSidesIndex, length(fMatchSides)-1]);
+          for var i := 0 to Length(scores)-1 do
+            score := format('%s %.2f',[score, scores[i]]);
+          TLog.Instance.Log([leInfo],'score = %s',[score]);
+          TThread.ForceQueue(nil,
+          procedure
+          begin
+            lblScore.Text := score
+          end)
+        finally
+//          lblScore.EndUpdate;
+//          lblScore.Repaint
+        end;
       end
+      else
     end
   finally
     Canvas.EndScene
@@ -458,10 +588,11 @@ end;
 procedure TfraArrangeViewer.Start(AScan: TScanCollection);
 begin
   inherited;
-  fArrScale := 0.5;
+  fraBitmapViewer.tckZoom.Value := 0.7;
+
   fArrCollection := TArrCollection.Create(AScan);
-  fLastArrBound := RectF(0, 0, 0, 0);
-  fArrBound := fLastArrBound;
+//  fLastArrBound := RectF(0, 0, 0, 0);
+//  fArrBound := fLastArrBound;
   lstPieces.Clear;
   lstPieces.DefaultItemStyles.ItemStyle := 'lst2Style1';
 

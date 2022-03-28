@@ -157,7 +157,7 @@ inherited fraCornerViewer: TfraCornerViewer
           TabOrder = 35
           Cursor = crIBeam
           Max = 90.000000000000000000
-          Value = 20.000000298023220000
+          Value = 50.000000745058060000
           ValueType = Float
           KeyboardType = NumbersAndPunctuation
           Frequency = 0.100000001490116100
@@ -207,7 +207,7 @@ inherited fraCornerViewer: TfraCornerViewer
         IsChecked = True
         Position.X = 8.000000000000000000
         Position.Y = 41.000000000000000000
-        TabOrder = 28
+        TabOrder = 27
         Text = 'None'
       end
       object btnStep: TButton
@@ -224,20 +224,20 @@ inherited fraCornerViewer: TfraCornerViewer
         GroupName = 'Trace'
         Position.X = 8.000000000000000000
         Position.Y = 63.000000000000000000
-        TabOrder = 35
+        TabOrder = 33
         Text = 'By Point'
       end
       object rbBySegment: TRadioButton
         GroupName = 'Trace'
         Position.X = 8.000000000000000000
         Position.Y = 84.000000000000000000
-        TabOrder = 33
+        TabOrder = 32
         Text = 'By Segment'
       end
       object rbShowErrors: TCheckBox
         Position.X = 8.000000000000000000
         Position.Y = 106.000000000000000000
-        TabOrder = 37
+        TabOrder = 36
         Text = 'Show Errors'
       end
       object rbManual: TRadioButton
